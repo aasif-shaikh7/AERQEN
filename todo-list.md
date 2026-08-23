@@ -364,7 +364,11 @@ The following are established documentation artifacts:
 - `ROADMAP.md`
 - `DEVELOPMENT_AND_TESTING.md`
 - `AI_DEVELOPMENT_GUIDE.md`
-- `BRAND_GUIDE.md`
+- `AERQEN_BRAND_GUIDE.md`
+- `GLOSSARY.md`
+- `CONTRIBUTING.md`
+- `ARCHITECTURE_DECISION_LOG.md`
+- `TECHNOLOGY_SELECTION.md`
 - `README.md`
 - `todo-list.md`
 - `done-list.md`

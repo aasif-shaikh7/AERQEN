@@ -207,7 +207,11 @@ aerqen/
 ├── ROADMAP.md
 ├── DEVELOPMENT_AND_TESTING.md
 ├── AI_DEVELOPMENT_GUIDE.md
-├── BRAND_GUIDE.md
+├── GLOSSARY.md
+├── CONTRIBUTING.md
+├── ARCHITECTURE_DECISION_LOG.md
+├── TECHNOLOGY_SELECTION.md
+├── AERQEN_BRAND_GUIDE.md
 ├── CHANGELOG.md
 ├── todo-list.md
 ├── done-list.md
@@ -411,7 +415,7 @@ See `AI_DEVELOPMENT_GUIDE.md`.
 
 > Understand the task. Plan the work. Execute safely. Verify the result.
 
-See `BRAND_GUIDE.md`.
+See `AERQEN_BRAND_GUIDE.md`.
 
 ---
 

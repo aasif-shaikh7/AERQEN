@@ -3,7 +3,7 @@
 This is the target structure. It may evolve only through documented architecture decisions.
 
 ```text
-AI_COMPUTER_EMPLOYEE/
+aerqen/
 │
 ├── README.md
 ├── PRD.md
