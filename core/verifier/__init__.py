@@ -1,0 +1,1 @@
+"""Verifier subpackage (ARCHITECTURE.md -> Verifier; FEAT-9)."""

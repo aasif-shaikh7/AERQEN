@@ -1,0 +1,1 @@
+"""Tools package: a controlled registry of capabilities AERQEN may use."""

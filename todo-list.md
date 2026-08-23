@@ -50,10 +50,10 @@ An item is never deleted merely to make the queue look shorter.
 
 | Phase | Items |
 |---|---|
-| `done` | `CRIT-1`, `CRIT-2`, `CRIT-3`, `CRIT-4`, `CRIT-5`, `CRIT-6` — documentation/specification established |
-| `testing` | — |
-| `building` | — |
-| `pending` | Phase 0 feasibility gate, technology selection, development environment, first executable skeleton |
+| `done` | `CRIT-1`, `CRIT-2`, `CRIT-3`, `CRIT-4`, `CRIT-5`, `CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed) |
+| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-7`, `FEAT-9` — implemented, unit tests pass, owner acceptance pending |
+| `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
+| `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-6` (approval UI, Phase 2); `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |
 | `superseded` | — |
 
@@ -131,7 +131,7 @@ Development must proceed through explicit phases and must not jump to advanced a
 
 ## `CRIT-7` — Complete Phase 0 feasibility review
 
-**Phase:** `pending`
+**Phase:** `building`
 
 Before substantial coding:
 - inspect the target Windows environment
@@ -142,25 +142,46 @@ Before substantial coding:
 - define the minimum executable prototype
 - identify technical unknowns that must be tested before architecture is locked
 
+**Recorded (owner-approved):** Full technology selection is now documented in
+`TECHNOLOGY_SELECTION.md` and `ARCHITECTURE_DECISION_LOG.md` (ADR-004 .. ADR-008).
+No section remains an open `TBD`.
+
+**Still open:** the actual development environment (Windows 11 VM, Ollama, Python libs)
+must be installed and verified by the owner using `VM_SETUP_GUIDE.md` and
+`OLLAMA_SETUP_GUIDE.md`. This part stays `pending` until the owner records it.
+
 **Rule:** Unknowns are experiments, not assumptions.
 
 ---
 
 ## `CRIT-8` — Define the first executable milestone
 
-**Phase:** `pending`
+**Phase:** `done`
 
-The first executable milestone must prove the core loop:
+The Phase 1 skeleton pipeline is implemented and **accepted by the owner on 2026-08-23**. Measured evidence:
 
 ```text
-Task
-→ Understand
-→ Plan
-→ Policy Check
-→ Execute
-→ Observe
-→ Verify
-→ Report
+python -m app.entrypoint.cli "echo hello aerqen"
+  -> state : done
+  -> outcome : Measured: tool returned the exact message.
+
+python -m pytest tests -q
+  -> 4 passed
+
+python -m app.entrypoint.cli "open office"
+  -> state : failed  (honest unsupported-command handling)
+```
+
+The core loop is proven:
+
+```text
+Task → Understand → Plan → Policy Check → Execute → Observe → Verify → Report
+```
+
+Run it with:
+
+```text
+python -m app.entrypoint.cli "echo hello aerqen"
 ```
 
 No unrestricted computer control is required for this milestone.
@@ -186,39 +207,47 @@ When the first implementation begins, every real failure must receive a `BUG-*` 
 
 ## `FEAT-1` — Core task model
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Create a structured representation of a user task, its state, inputs, outputs, permissions, and result.
+
+**Implemented:** `core/task_manager/models.py` (`Task`, `Step`, state enums). Covered by unit tests.
 
 ---
 
 ## `FEAT-2` — Brain interface
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Convert natural-language input into structured task understanding without directly executing computer actions.
+
+**Implemented:** `core/brain/interface.py` + `core/brain/mock.py` (deterministic MVP brain). Real LLM brain is deferred to the Ollama integration.
 
 ---
 
 ## `FEAT-3` — Planner
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Create explicit, inspectable plans with steps, dependencies, required tools, and expected outcomes.
+
+**Implemented:** `core/planner/interface.py` + `core/planner/naive.py`. Covered by unit tests.
 
 ---
 
 ## `FEAT-4` — Tool registry
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Create a controlled registry describing what each tool can do, its inputs, risk level, permissions, and output.
+
+**Implemented:** `tools/registry.py` (Tool/ToolRegistry) + `tools/demo.py`. Covered by unit tests.
 
 ---
 
 ## `FEAT-5` — Security policy engine
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Evaluate actions before execution and decide:
 
@@ -228,6 +257,10 @@ CONFIRM
 BLOCK
 ```
 
+**Implemented:** `security/policy/policy.py` (PolicyEngine). HIGH risk defaults to BLOCK
+for the MVP; CONFIRM is surfaced but no interactive approval UI exists yet (see FEAT-6).
+Covered by unit tests.
+
 ---
 
 ## `FEAT-6` — Approval system
@@ -236,13 +269,19 @@ BLOCK
 
 Provide human approval gates for high-impact actions.
 
+**Status note:** The policy engine emits `CONFIRM`, but there is no interactive approval
+UI yet. This is intentionally deferred past the Phase 1 skeleton MVP (the MVP has no
+MEDIUM/HIGH tool to approve). It becomes `building` in Phase 2 (Safe Tool System).
+
 ---
 
 ## `FEAT-7` — Executor
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Execute approved tool actions and return structured results.
+
+**Implemented:** `core/executor/interface.py` + `core/executor/simple.py`. Covered by unit tests.
 
 ---
 
@@ -252,13 +291,20 @@ Execute approved tool actions and return structured results.
 
 Observe relevant application/computer state after actions.
 
+**Phase note:** The MVP's observation equals the tool's returned result (Executor output).
+Real screen/window-state observation (pywinauto + screen capture, per ADR-007) is a Phase 3
+capability and remains `pending`. FEAT-7 covers result capture for now.
+
 ---
 
 ## `FEAT-9` — Verification engine
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Determine whether an action actually achieved its intended result.
+
+**Implemented:** `core/verifier/interface.py` + `core/verifier/checker.py` (ContractVerifier).
+Covered by unit tests.
 
 ---
 

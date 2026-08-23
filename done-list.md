@@ -141,3 +141,36 @@ When a feature is completed, its entry should answer:
 > **What was built, how was it tested, what evidence proves it, and what limitations remain?**
 
 That rule exists specifically to prevent AERQEN from developing a changelog full of claims that were never executed.
+## Phase 1 skeleton pipeline (CRIT-8 - done)
+
+**Owner accepted this milestone on 2026-08-23** after running and confirming the manual
+tests, matching `todo-list.md` -> `CRIT-8`.
+
+**Measured evidence (recorded):**
+- `python -m app.entrypoint.cli "echo hello aerqen"` -> state `done`, verifier outcome
+  `Measured: tool returned the exact message.`
+- `python -m pytest tests -q` -> **4 passed** (covers the full loop, policy, registry).
+- `python -m app.entrypoint.cli "open office"` -> state `failed` (honest unsupported-command).
+
+**Built:**
+- `core/task_manager/models.py` — Task/Step models + states
+- `core/brain/` (interface + mock) — task understanding
+- `core/planner/` (interface + naive) — task planning
+- `core/executor/` (interface + simple) — execution
+- `core/verifier/` (interface + checker) — verification
+- `security/policy/policy.py` — ALLOW / CONFIRM / BLOCK engine
+- `tools/registry.py` + `tools/demo.py` — controlled demo tool
+- `core/pipeline.py` — orchestrator
+- `app/entrypoint/cli.py` — CLI entry point
+
+**Limitations (recorded honestly):**
+- The mock brain only understands the `echo <command>` set (real LLM brain deferred).
+- No computer control, filesystem mutation, or external service.
+- No interactive approval UI (FEAT-6) and no real screen observation (FEAT-8) — both are
+  explicit later-phase capabilities.
+
+**Limitations:**
+- The mock brain only understands the `echo <command>` set (real LLM brain deferred).
+- No computer control, filesystem mutation, or external service.
+- No interactive approval UI (FEAT-6) and no real screen observation (FEAT-8) — both are
+  explicit later-phase capabilities.

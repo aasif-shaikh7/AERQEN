@@ -37,7 +37,11 @@ For each area below, complete the same fields:
 ### 1. Target environment
 - **Question:** What Windows version(s), hardware, and permissions is the first milestone built and tested on?
 - **Candidate options:** Windows 10 / Windows 11; virtual machine vs physical machine.
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **Windows 11 running inside a Virtual Machine (VM) — e.g. VirtualBox** for development and testing, so a failure cannot harm the real machine's data.
+  - Owner has no prior VM experience → a beginner `VM_SETUP_GUIDE.md` is provided in the repo root.
+- **Reasoning / evidence:** `Reasoned` — VM isolates testing risk while using the same Windows 11 target as the real product.
+- **Risk:** VM is slightly slower than the physical machine; requires installing a hypervisor first.
+- **Owner:** recorded (Approved).
 
 ### 2. Language and runtime
 - **Question:** What language/language runtime hosts the agent?
@@ -78,23 +82,38 @@ For each area below, complete the same fields:
 ### 5. Computer-control technology
 - **Question:** How does AERQEN read controlled mouse/keyboard/window actions safely on Windows?
 - **Considerations:** must satisfy `SECURITY.md` computer-control safety.
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **Python `pyautogui`** as the Phase 1 mouse/keyboard control library — simple, free, learning-friendly, and appropriate for the VM test environment.
+- **Reasoning / evidence:** `Reasoned` — simplest Python path for mouse/keyboard; deep window control (`pywinauto`) is kept for observation (see §6) rather than core input control in Phase 1.
+- **Risk:** `pyautogui` is screen-coordinate based; must always be used behind the permission/policy layer (`SECURITY.md`).
+- **Owner:** recorded (Approved).
 
 ### 6. Observation technology
 - **Question:** How does AERQEN capture and interpret application/computer screen state?
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **Screen capture + window-state reading via Python `pywinauto`** — screenshots (to see content) plus window/control state (to read the actual application state) for deeper observation.
+- **Reasoning / evidence:** `Reasoned` — combining screen pixels with window-state gives both visual and structural understanding as required by `ARCHITECTURE.md` (Observation).
+- **Risk:** window-state reliability depends on the target app; must not be used to bypass auth or access controls (`SECURITY.md`).
+- **Owner:** recorded (Approved).
 
 ### 7. Secure tool-execution strategy
 - **Question:** How are tools registered, permission-checked, approved, and audited before/after execution?
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **Full architecture-faithful design**: a Tool Registry + Policy/Security Engine (ALLOW / CONFIRM / BLOCK) + Approval gates + Audit Log, per `SECURITY.md`.
+- **Reasoning / evidence:** `Reasoned` — directly matches the security model and `ARCHITECTURE.md` module boundaries; Phase 2 will implement it fully, but the design decision is fixed now.
+- **Risk:** most complex of the tool decisions; built incrementally behind the `security/` boundary.
+- **Owner:** recorded (Approved).
 
 ### 8. Testing environment
 - **Question:** In what controlled environment are tests run safely (so a failure cannot harm real data)?
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **Hybrid — Unit + Integration tests run on the local machine; System + Security tests run inside the Windows 11 VM** (§1). This keeps fast feedback on the real machine while isolating risky full-system tests in the VM.
+- **Reasoning / evidence:** `Reasoned` — local unit/integration is fast; VM isolates system/security tests from real data (aligns with §1 and `SECURITY.md`).
+- **Risk:** VM must be running for system/security tests.
+- **Owner:** recorded (Approved).
 
 ### 9. Minimum viable core loop
 - **Question:** What is the smallest runnable `Task → Understand → Plan → Policy Check → Execute → Observe → Verify → Report` milestone?
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **A "skeleton pipeline" MVP**: run a text task through the whole loop using a simple/fake tool (no real computer control). This proves the pipeline (Task → Understand → Plan → Policy Check → Execute a stub tool → Observe → Verify → Report) before any real capability is attached.
+- **Reasoning / evidence:** `Reasoned` — proving the loop's plumbing with a fake tool isolates the core-agent architecture from tool complexity (matches `todo-list.md` CRIT-8).
+- **Risk:** a stub only proves flow, not a real-world result; this is intentional for the Phase 1 milestone.
+- **Owner:** recorded (Approved).
 
 ---
 

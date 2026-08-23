@@ -12,11 +12,12 @@ AERQEN is being built as a modular platform rather than a single-purpose automat
 
 ## Project Status
 
-**Stage:** Phase 0 — Specification and Feasibility  
-**Runtime:** Not implemented yet  
-**Development model:** One human developer + AI engineering assistance
+**Stage:** Phase 1 — Core Agent (skeleton pipeline) in progress  
+**Runtime:** Minimal runnable skeleton pipeline (Python). Basic loop works; acceptance pending.  
+**Development model:** One human developer (testing/decisions) + AI engineering lead
 
-This repository is intentionally specification-first.
+This repository is specification-first, but Phase 1 has produced a runnable skeleton that
+implements the core loop with a safe demo tool.
 
 Do not assume a capability exists merely because it appears in the roadmap.
 
@@ -213,6 +214,8 @@ aerqen/
 ├── TECHNOLOGY_SELECTION.md
 ├── AERQEN_BRAND_GUIDE.md
 ├── OLLAMA_SETUP_GUIDE.md
+├── VM_SETUP_GUIDE.md
+├── PHASE1_TESTING_GUIDE.md
 ├── CHANGELOG.md
 ├── todo-list.md
 ├── done-list.md
@@ -422,21 +425,23 @@ See `AERQEN_BRAND_GUIDE.md`.
 
 ## Current Next Step
 
-The immediate task is **Phase 0 technical feasibility**.
+**Phase 0 feasibility is recorded.** All nine questions below are now answered in
+`TECHNOLOGY_SELECTION.md` (ADR-004..ADR-008): target environment, language/runtime, AI
+provider, local-vs-cloud, computer control, observation, secure tool execution, testing
+environment, and the minimum viable core loop.
 
-Before building the full agent, determine:
+**Phase 1 skeleton pipeline is implemented** (see `CHANGELOG.md`). The immediate next
+steps are:
 
-- target Windows environment
-- language/runtime
-- AI model/provider strategy
-- local vs cloud responsibilities
-- computer-control technology
-- observation technology
-- secure tool-execution strategy
-- testing environment
-- minimum viable core loop
+1. **Owner acceptance gate:** run the CLI + test suite once and confirm (see `CRIT-8`).
+   - `python -m app.entrypoint.cli "echo hello aerqen"`
+   - `python -m pytest tests -q`
+2. **Set up the real dev environment** using `VM_SETUP_GUIDE.md` (Windows 11 VM) and
+   `OLLAMA_SETUP_GUIDE.md` (local AI). When done, record it under `CRIT-7` in `todo-list.md`.
+3. After acceptance + environment, continue Phase 1 toward a real LLM brain (via the
+   `integrations/ai` provider adapter) and the first real controlled tool.
 
-Only after these questions are resolved should substantial application code be written.
+Only after the owner confirms the executable milestone should the next capability be added.
 
 ---
 

@@ -35,7 +35,11 @@ in another document, that document is considered wrong unless this glossary is u
 | **Verifier** | Checks whether an action actually achieved its intended result. |
 | **Recovery** | Handling recoverable failures with bounded retries, then stopping safely. It must never loop indefinitely. |
 | **Memory** | Storing only useful, permitted information: user preferences, project context, task history. |
+| **Memory** | Storing only useful, permitted information: user preferences, project context, task history. |
 | **Task Manager** | Tracks the state and lifecycle of tasks through the pipeline. |
+| **Adapter** | A thin interface that isolates provider-specific code (e.g. AI model providers in `integrations/ai/`) so the core does not depend on one vendor. |
+| **Model** | The AI "brain" file / model served by a runtime such as Ollama. Runs on the machine; no data leaves the computer. |
+| **Virtual Machine (VM)** | A software-emulated separate computer running inside your real computer. Files inside the VM cannot affect your real system unless you let them. |
 
 ---
 

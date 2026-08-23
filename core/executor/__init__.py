@@ -1,0 +1,1 @@
+"""Executor subpackage (ARCHITECTURE.md -> Executor; FEAT-7)."""

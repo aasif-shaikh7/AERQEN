@@ -63,6 +63,8 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-004` | Python-centric technology stack (Phase 0) | Accepted |
 | `ADR-005` | AI provider: local Ollama now, provider adapter for future | Accepted |
 | `ADR-006` | All-local deployment (Phase 1) | Accepted |
+| `ADR-007` | Windows 11 VM target + pyautogui control + pywinauto observation | Accepted |
+| `ADR-008` | Tool registry + policy + audit; hybrid testing; skeleton MVP | Accepted |
 
 ---
 
@@ -212,6 +214,54 @@ In Phase 1, everything runs **locally on the Windows machine**:
 - **Negative/trading:** no remote/internet access until a later phase; capacity limited to one machine.
 
 **References:** `CRIT-7`, `ROADMAP.md` (Phase 10), `TECHNOLOGY_SELECTION.md` (section 4).
+
+---
+
+## ADR-007 — VM target + computer-control + observation libraries
+
+**Status:** Accepted
+**Date:** 2026-08-23 (recorded from owner decisions, `TECHNOLOGY_SELECTION.md` §1/§5/§6)
+
+**Context**
+`CRIT-7` required choosing the target environment, computer-control technology, and
+observation technology before Phase 1 coding.
+
+**Decision**
+- **Target environment:** Windows 11 inside a Virtual Machine (VirtualBox) for isolated development/testing.
+- **Computer control:** Python `pyautogui` for mouse/keyboard (behind the security layer).
+- **Observation:** screen capture + window-state reading via Python `pywinauto`.
+
+**Alternatives**
+- Physical-machine-only testing — rejected: higher risk to real data.
+- Deeper `pywinauto` as the core input controller — deferred; used for observation instead.
+
+**Consequences**
+- **Positive:** safe isolated testing; progressive learning for the owner.
+- **Negative:** VM is slower; screen-coordinate control must stay behind permission checks.
+
+**References:** `CRIT-7`, `VM_SETUP_GUIDE.md` (created), `SECURITY.md` (computer-control safety).
+
+---
+
+## ADR-008 — Tool/security design, hybrid testing, skeleton MVP
+
+**Status:** Accepted
+**Date:** 2026-08-23 (recorded from owner decisions, `TECHNOLOGY_SELECTION.md` §7/§8/§9)
+
+**Decision**
+- **Secure tool execution:** full Tool Registry + Policy Engine (ALLOW/CONFIRM/BLOCK) + Approval gates + Audit Log per `SECURITY.md`.
+- **Testing environment:** hybrid — unit/integration local; system/security inside the Windows 11 VM.
+- **First MVP core loop:** a skeleton pipeline using a simple/fake tool to prove Task → Understand → Plan → Policy Check → Execute (stub) → Observe → Verify → Report.
+
+**Alternatives considered**
+- Minimal allow/block logging now (approval UI later) — deferred; full policy design is fixed now so `security/` boundaries are respected from the start.
+
+**Consequences**
+- **Positive:** security-first from Phase 1; tests isolate real data.
+- **Negative/needs:** system/security tests require a running VM; the stub MVP proves flow, not a real-world outcome (intentional for the Phase 1 gate).
+
+**References**
+- `CRIT-8` (MVP loop), `SECURITY.md`, `ARCHITECTURE.md` (tool/security modules), `TECHNOLOGY_SELECTION.md` §7/§8/§9.
 
 ---
 

@@ -1,0 +1,1 @@
+"""Brain subpackage: converts user intent into a structured task."""

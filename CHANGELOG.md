@@ -57,6 +57,29 @@ Recorded the project owner's decision to release AERQEN under the **MIT License*
 - **Technology stack (ADR-004):** Python 3.12+ single core; Office/Revit/Android via Python/pyRevit/responsive web UI; C#/.NET deferred.
 - **AI provider (ADR-005):** Local Ollama now + provider adapter for future multi-user/cloud.
 - **Deployment (ADR-006):** All-local, Phase 1; multi-user/cloud deferred to Phase 10.
+- **Environment/computer/observation (ADR-007):** Windows 11 in a VirtualBox VM; `pyautogui` for input; `pywinauto`+screen capture for observation.
+- **Tool/security/testing/MVP (ADR-008):** full Tool Registry + Policy + Audit; hybrid testing (unit/integration local, system/security on VM); skeleton-pipeline MVP with a simple/fake tool.
+- **New setup guide:** `VM_SETUP_GUIDE.md` (beginner Windows 11 VM setup) added to the root because the owner had no prior VM experience.
+
+### Phase 1 skeleton pipeline (CRIT-8 - accepted by owner)
+
+Implemented the runnable Phase 1 core skeleton (`CRIT-8`). This is the first executable
+milestone: it proves the full loop with a **safe demo tool** and no real computer control.
+On 2026-08-23 the owner ran and confirmed the acceptance tests.
+
+- Added the AERQEN Python packages under `core/` (task model, brain, planner, executor,
+  verifier, pipeline), `security/policy/`, `tools/`, and `app/`.
+- Added `app/entrypoint/cli.py` — a CLI that runs one task through the loop.
+- Added unit tests in `tests/unit/` (`pytest`).
+
+**Measured (recorded):**
+- `python -m app.entrypoint.cli "echo hello aerqen"` -> state `done`, verifier outcome
+  `Measured: tool returned the exact message.`
+- `python -m pytest tests -q` -> **4 passed**.
+- `python -m app.entrypoint.cli "open office"` -> state `failed` (honest unsupported-command).
+
+**Status:** `CRIT-8` is `done` (owner-accepted). `FEAT-1/2/3/4/5/7/9` are `testing`
+(implemented + tests pass, awaiting owner `done` on each; they are part of CRIT-8's build).
 
 ### Product scope
 

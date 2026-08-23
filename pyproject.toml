@@ -1,0 +1,19 @@
+# AERQEN project metadata (Phase 1 skeleton).
+
+[project]
+name = "aerqen"
+version = "0.1.0"
+description = "AERQEN - an AI Computer Employee (Phase 1 core skeleton)."
+requires-python = ">=3.12"
+
+# Phase 1 MVP uses only the standard library. These are the Phase 2+ optional deps
+# (ADR-004/ADR-007) recorded for the VM/native feature work later.
+[project.optional-dependencies]
+pyautogui = "*"
+pywinauto = "*"
+mss = "*"
+pillow = "*"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
