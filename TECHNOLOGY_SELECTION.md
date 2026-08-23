@@ -42,16 +42,38 @@ For each area below, complete the same fields:
 ### 2. Language and runtime
 - **Question:** What language/language runtime hosts the agent?
 - **Considerations:** suitability for Windows automation, AI SDKs, test tooling, one-developer maintainability.
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **Python 3.12+** as the single core language.
+- **Component decisions:**
+  - AI core agent: **Python** (largest AI ecosystem, free, best for one-developer + AI-assist).
+  - Office (Excel/Word/PPT): **Python** via `openpyxl`, `python-docx`, `python-pptx` (free).
+  - Revit: **`pyRevit`** (Python) — no separate C#/.NET needed for Revit.
+  - Windows automation: **Python** libraries.
+  - Android/phone control: **Responsive Web UI (PWA)** — works in the Android browser without Kotlin; native Android deferred to a later phase.
+  - C#/.NET: **deferred** optional module (Phase 8 specialist, if ever needed) — not part of the Phase 1 core.
+- **Reasoning / evidence:** `Reasoned` (architecture review) — Python covers all stated scopes with free tooling and one language to learn.
+- **Risk:** A single-language choice trades some native Windows/Revit performance for simplicity. Revisit only with a documented decision.
+- **Owner:** recorded (Approved).
+
+---
 
 ### 3. AI model/provider strategy
 - **Question:** Which AI model/provider powers the Brain/Planner? Local, cloud, or hybrid?
-- **Considerations:** security of secrets, network policy, cost, offline ability, prompt/model control.
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** Local **Ollama** (open-source) as Phase 1 default — single-user, offline, free, no API key.
+  - Multi-user / cloud: deferred until server budget/requirement exists; `integrations/ai/` provider adapter means the Brain/Planner do not change when a provider is added.
+  - No student email → cloud free-tier is not a reliable free dependency.
+- **Reasoning / evidence:** `Reasoned` (cost + privacy + no-student-email constraint).
+- **Risk:** small local models may underperform large cloud models on complex/long tasks.
+- **Owner:** recorded (Approved).
+
+---
 
 ### 4. Local vs cloud responsibilities
 - **Question:** What runs on the machine vts. what requires a remote service?
-- **Decision:** `TBD`
+- **Decision (owner-approved, recorded):** **All-local (Phase 1).** The entire agent runtime — Python core, AI via Ollama, responsive web UI, tools — runs on the Windows machine. Access is `localhost` (and optionally LAN for phone/browser testing).
+  - Multi-user / cloud: deferred to Phase 10 (see `ROADMAP.md` Advanced Autonomy).
+- **Reasoning / evidence:** `Reasoned` — matches the single-user, free, privacy-first model; no server budget now.
+- **Risk:** no remote access until a later phase; a phone on the same LAN uses `localhost/LAN`, not the internet.
+- **Owner:** recorded (Approved).
 
 ### 5. Computer-control technology
 - **Question:** How does AERQEN read controlled mouse/keyboard/window actions safely on Windows?

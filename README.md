@@ -212,6 +212,7 @@ aerqen/
 ├── ARCHITECTURE_DECISION_LOG.md
 ├── TECHNOLOGY_SELECTION.md
 ├── AERQEN_BRAND_GUIDE.md
+├── OLLAMA_SETUP_GUIDE.md
 ├── CHANGELOG.md
 ├── todo-list.md
 ├── done-list.md
@@ -441,9 +442,9 @@ Only after these questions are resolved should substantial application code be w
 
 ## License
 
-License choice is not finalized yet.
+AERQEN is released under the **MIT License**. See `LICENSE`.
 
-Do not add a license claim until the project owner makes and records that decision.
+**Owner decision (recorded):** MIT License chosen by project owner.
 
 ---
 

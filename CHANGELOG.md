@@ -42,6 +42,22 @@ Established the initial documentation set:
 - `done-list.md`
 - `CHANGELOG.md`
 
+### License decision
+
+Recorded the project owner's decision to release AERQEN under the **MIT License** (`LICENSE`).
+
+### Repository structure and onboarding
+
+- Created the target directory structure (`app/`, `core/`, `agents/`, `tools/`, `security/`, `memory/`, `integrations/`, `tests/`, `docs/`, `data/`).
+- Added `OLLAMA_SETUP_GUIDE.md` — a free, non-programmer guide to setting up the local LLM (Ollama) for the accepted ADR-005 decision.
+
+### Phase 0 owner decisions (recorded)
+
+- **License:** MIT (`LICENSE`, `README.md`).
+- **Technology stack (ADR-004):** Python 3.12+ single core; Office/Revit/Android via Python/pyRevit/responsive web UI; C#/.NET deferred.
+- **AI provider (ADR-005):** Local Ollama now + provider adapter for future multi-user/cloud.
+- **Deployment (ADR-006):** All-local, Phase 1; multi-user/cloud deferred to Phase 10.
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.

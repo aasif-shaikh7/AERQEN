@@ -60,7 +60,9 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-001` | Modular agent architecture with strict module boundaries | Accepted |
 | `ADR-002` | Security-first with LOW / MEDIUM / HIGH risk model | Accepted |
 | `ADR-003` | Target repository structure and module layout | Accepted |
-| `ADR-004` | (Reserved) Phase 0 technology stack selection | Pending |
+| `ADR-004` | Python-centric technology stack (Phase 0) | Accepted |
+| `ADR-005` | AI provider: local Ollama now, provider adapter for future | Accepted |
+| `ADR-006` | All-local deployment (Phase 1) | Accepted |
 
 ---
 
@@ -129,14 +131,87 @@ Add a directory only when a real requirement or architectural boundary justifies
 
 ---
 
-## ADR-004 — Phase 0 technology stack selection (reserved)
+## ADR-004 — Python-centric technology stack (Phase 0 acceptance)
 
-**Status:** Pending
-**Date:** — 
+**Status:** Accepted
+**Date:** 2026-08-23 (recorded from owner decision)
 
-This ADR is reserved for the outcome of `CRIT-7` in `todo-list.md`. Until the feasibility
-review is measured and recorded, no technology choice is locked. See the working record in
-`TECHNOLOGY_SELECTION.md`.
+**Context**
+`CRIT-7` required choosing the initial technology stack before substantial code. The
+project owner requested a free, student-friendly, single-language solution covering AI,
+Windows automation, Office, Revit, and Android/phone control.
+
+**Decision**
+Use **Python 3.12+** as the single core language:
+- AI core agent → Python
+- Office / documents → Python (`openpyxl`, `python-docx`, `python-pptx`)
+- Revit → `pyRevit` (Python) instead of a separate C#/.NET core
+- Windows automation → Python libraries (kept behind the security layer)
+- Android / phone control → Responsive Web UI (PWA) in the phone browser; separate native app deferred
+
+**Alternatives considered (and rejected for now)**
+- **C#/.NET as core language** — rejected: adds a second language to learn for no Phase 1 benefit; deferred to optional specialist modules.
+- **Native Kotlin Android app now** — rejected: the security model (human must stay in control) is served by a responsive web UI; native app adds complexity before the product is stable.
+- **TypeScript/Node.js core** — rejected: weaker Windows desktop automation suite vs Python.
+
+**Consequences**
+- **Positive:** one language, 100% free tooling, matches the student/non-programmer owner, covers all scopes.
+- **Neutral/trading:** some specialist native performance deferred.
+
+**References:** CRIT-7, `TECHNOLOGY_SELECTION.md`, `FOLDER_STRUCTURE.md`.
+
+---
+
+## ADR-005 — AI provider: local Ollama now, provider adapter for future
+
+**Status:** Accepted
+**Date:** 2026-08-23 (recorded from owner decision)
+
+**Context**
+`CRIT-7` required an AI provider strategy. The owner is a student with no official student
+email (so cloud free-tiers are not a reliable free dependency) and no multi-user server
+budget yet. The long-term product may need multi-user/cloud, but it is not affordable now.
+
+**Decision**
+- **Phase 1 default:** Local **Ollama** (open-source, offline, free, no API key) for the Brain/Planner.
+- **Provider abstraction:** All provider-specific AI code lives in `integrations/ai/` behind a provider **adapter**. The Brain/Planner must depend on this adapter interface, never on a specific vendor.
+- **Multi-user / cloud:** Deferred. When a server budget or cloud requirement exists, add a new adapter (e.g. self-hosted `ollama serve`, or a paid cloud API) without changing core.
+
+**Alternatives considered (rejected for now)**
+- **Cloud free-tier only** — rejected: the owner has no official student email, so this is not a reliable free path.
+- **Native Kotlin/Android multi-user backend now** — out of scope; deferred.
+
+**Consequences**
+- **Positive:** zero cost, offline privacy, no secret/API-key exposure for the core path; future cloud/multi-user is an isolated addition.
+- **Negative/trading:** small local models may be less capable than large cloud models; performance depends on the user's machine.
+
+**References:** `CRIT-7`, `integrations/ai/` (FOLDER_STRUCTURE.md), `SECURITY.md` (secrets).
+
+---
+
+## ADR-006 — All-local deployment (Phase 1)
+
+**Status:** Accepted
+**Date:** 2026-08-23 (recorded from owner decision)
+
+**Context**
+`CRIT-7` required deciding local vs cloud responsibilities. The owner is a single user with
+no server budget and prefers free, private, offline-first operation.
+
+**Decision**
+In Phase 1, everything runs **locally on the Windows machine**:
+- Python core agent, AI via local Ollama, responsive web UI, and all tools run on the device.
+- Access is `localhost`; optionally exposed on the LAN so a phone/browser on the same network can control it.
+- No cloud server in Phase 1. Multi-user / cloud is deferred to Phase 10 (Advanced Autonomy in `ROADMAP.md`).
+
+**Alternatives considered (rejected for now)**
+- **Cloud-hosted agent now** — rejected: no server budget, privacy/cost trade-offs, and no student-email cloud tier.
+
+**Consequences**
+- **Positive:** zero cost, offline privacy, simple single-machine setup.
+- **Negative/trading:** no remote/internet access until a later phase; capacity limited to one machine.
+
+**References:** `CRIT-7`, `ROADMAP.md` (Phase 10), `TECHNOLOGY_SELECTION.md` (section 4).
 
 ---
 

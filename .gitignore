@@ -1,0 +1,55 @@
+# --- AERQEN .gitignore ---
+# Python + secrets + local runtime/data. Commit this file; it protects your repo.
+
+# ---- Python bytecode / cache ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.env.venv/
+pip-wheel-metadata/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---- Secrets: NEVER commit any of these ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+token.pickle
+secrets/
+secret*
+
+# ---- Data / runtime / logs (AERQEN local runtime) ----
+# AERQEN data + runtime dirs keep user data and logs out of git
+data/logs/*
+data/runtime/*
+data/test/*
+!data/**/.gitkeep
+*.log
+logs/
+
+# ---- IDEs / OS ----
+.vscode/
+.idea/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+
+# ---- Tests scratch ----
+tests/tmp/
+*.tmp
