@@ -149,14 +149,17 @@ No section remains an open `TBD`.
 **Still open:** the actual development environment (Windows 11 VM, Ollama, Python libs)
 must be installed and verified by the owner using `VM_SETUP_GUIDE.md` and
 `OLLAMA_SETUP_GUIDE.md`. This part stays `pending` until the owner records it.
-**Environment status on the dev machine (Measured 2026-09-03):**
+**Environment status on the dev machine (Measured 2026-09-03(:**
 - `Python 3.12.10` — installed and verified (`python --version`..
-- `pytest` (9.1.1) — installed so the acceptance-gate command runs;; re-ran the gate:
-  - `python -m pytest tests -q` -> **4 passed** (0.05s.
+- `pytest` (9.1.1) — installed;; the acceptance-gate commands re-run green:
+  - `python -m pytest tests -q` -> **5 passed** (0.04s..
   - `python -m app.entrypoint.cli "echo hello aerqen"` -> state `done`.
   - `python -m app.entrypoint.cli "open office"` -> state `failed` (honest unsupported-command handling..
-- `ollama` — **not found** on this machine (bin not in PATH;; owner action per `OLLAMA_SETUP_GUIDE.md`..
-- VirtualBox / Windows 11 VM — **not found** on this machine (owner action per `VM_SETUP_GUIDE.md`..
+- `Ollama` `0.33.2` — installed via `winget`;; **Measured:** `ollama --version` -> `version is 0.33.2`.
+- Model `qwen2.5:7b` (4.7 GB) — downloaded;; **Measured:** `ollama list` lists it. AI-reply test
+  (`ollama run qwen2.5:7b`) still owner-pending (step 4 of `OLLAMA_SETUP_GUIDE.md`..
+- `VirtualBox` `7.2.16r174877` — installed via `winget`;; **Measured:** `VBoxManage.exe --version` -> `7.2.16r174877`.
+- Windows  ️11 ISO + VM creation — **owner action pending** (official Microsoft download route chosen; then per `VM_SETUP_GUIDE.md`..
 
 **Rule:** Unknowns are experiments, not assumptions.
 
