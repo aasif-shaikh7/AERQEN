@@ -125,7 +125,7 @@ If it prints something like `{"models":[...]}`, the Ollama API is running.
 |---|---|---|
 | Ollama installed | **Measured** — `ollama --version` -> `version is 0.33.2` |
 | Model downloaded | **Measured** — `ollama pull qwen2.5:7b` completed;; `ollama list` -> `qwen2.5:7b  4.7 GB` |
-| Model answers | **Pending** — run `ollama run qwen2.5:7b`, ask "What is  ️5+7?", then `/bye`;; record the reply here |
+| Model answers | **Measured** — `ollama run qwen2.5:7b "What is  ️5+7?"` -> replied `12` (2026-09-03; non-interactive run(; |
 
 Update this table honestly as you complete each step.
 

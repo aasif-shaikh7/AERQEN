@@ -157,9 +157,12 @@ must be installed and verified by the owner using `VM_SETUP_GUIDE.md` and
   - `python -m app.entrypoint.cli "open office"` -> state `failed` (honest unsupported-command handling..
 - `Ollama` `0.33.2` — installed via `winget`;; **Measured:** `ollama --version` -> `version is 0.33.2`.
 - Model `qwen2.5:7b` (4.7 GB) — downloaded;; **Measured:** `ollama list` lists it. AI-reply test
-  (`ollama run qwen2.5:7b`) still owner-pending (step 4 of `OLLAMA_SETUP_GUIDE.md`..
+  (`ollama run qwen2.5:7b`) -> `12` (measured;; non-interactive run(.
 - `VirtualBox` `7.2.16r174877` — installed via `winget`;; **Measured:** `VBoxManage.exe --version` -> `7.2.16r174877`.
-- Windows  ️11 ISO + VM creation — **owner action pending** (official Microsoft download route chosen; then per `VM_SETUP_GUIDE.md`..
+- VM `AERQEN-Win11` — created + configured via `VBoxManage`;; **Measured:** `.vbox` XML shows EFI, TPM 2.0,
+  ️4096 MB RAM,  ️4 CPUs, NAT, SATA controller + 50 GB disk + DVD slot attached. Secure Boot is not
+  exposed by this VirtualBox build (known limitation;; Windows 11 setup proceeds via registry bypass(.
+- Windows  ️11 ISO download — **owner action pending** (official Microsoft route, ~6 GB;; attach to the VM per `VM_SETUP_GUIDE.md` and run Windows setup(; VM already created+configured(.
 
 **Rule:** Unknowns are experiments, not assumptions.
 

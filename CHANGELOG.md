@@ -113,13 +113,16 @@ Found and fixed a real bug while re-verifying the Phase 1 skeleton:
 On the dev machine (host(, per owner coordination:
 
 - `Ollama 0.33.2` installed via `winget`;; **Measured:** `ollama --version` -> `version is 0.33.2`.
-- Model `qwen2.5:7b` (4.7 GB) downloaded;; **Measured:** `ollama list` shows it. AI-reply smoke
-  test (`ollama run qwen2.5:7b`) is owner-pending.
-
+- Model `qwen2.5:7b` (4.7 GB) downloaded;; **Measured answer:** `ollama run qwen2.5:7b "What is  ️5+7?"` -> `12`.
 - `VirtualBox 7.2.16` installed via `winget`;; **Measured:** `VBoxManage.exe --version` -> `7.2.16r174877`.
+- VM `AERQEN-Win11` created + configured via `VBoxManage`;; **Measured:** `.vbox` XML: EFI, TPM 2.0,
+  4096 MB RAM,  ️4 CPUs, NAT, SATA controller + 50 GB disk + DVD slot attached. Secure Boot is not
+  exposed by this VirtualBox build (known limitation;; Windows 11 setup proceeds via registry bypass(.
 
-**Remaining owner action:** download the Windows  ️11 ISO (official Microsoft route, ~6 GB( and create
-the VM per `VM_SETUP_GUIDE.md`; then record `CRIT-7` as done in `todo-list.md`.
+**Remaining owner action:**
+- Downloadthe Windows  ️11 ISO, ~6 GB (, official Microsoft site(;, then send me the path so I can attach
+  it to the VM (SATA port 1, DVD(.
+- Run Windows setup inside the VM per `VM_SETUP_GUIDE.md`; then record `CRIT-7` as done in `todo-list.md`.
 
 
 ### Product scope
