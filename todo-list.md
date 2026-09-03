@@ -149,6 +149,14 @@ No section remains an open `TBD`.
 **Still open:** the actual development environment (Windows 11 VM, Ollama, Python libs)
 must be installed and verified by the owner using `VM_SETUP_GUIDE.md` and
 `OLLAMA_SETUP_GUIDE.md`. This part stays `pending` until the owner records it.
+**Environment status on the dev machine (Measured 2026-09-03):**
+- `Python 3.12.10` — installed and verified (`python --version`..
+- `pytest` (9.1.1) — installed so the acceptance-gate command runs;; re-ran the gate:
+  - `python -m pytest tests -q` -> **4 passed** (0.05s.
+  - `python -m app.entrypoint.cli "echo hello aerqen"` -> state `done`.
+  - `python -m app.entrypoint.cli "open office"` -> state `failed` (honest unsupported-command handling..
+- `ollama` — **not found** on this machine (bin not in PATH;; owner action per `OLLAMA_SETUP_GUIDE.md`..
+- VirtualBox / Windows 11 VM — **not found** on this machine (owner action per `VM_SETUP_GUIDE.md`..
 
 **Rule:** Unknowns are experiments, not assumptions.
 
@@ -190,7 +198,30 @@ No unrestricted computer control is required for this milestone.
 
 # 2. Errors and bugs
 
-No implementation bugs have been recorded yet.
+### `BUG-1` — Pipeline crashes (AttributeError( at the policy gate on a CONFIRM/BLOCK step
+
+**Phase:** `testing` (fixed + tests pass; awaiting owner acceptance(.
+
+
+
+**Reproduction (Measured 2026-09-03(:** A plan containing a MEDIUM or HIGH-risk step enters
+the policy-gate path, which calls ``self._describe_policy_gate(...)`` — a method that was never
+defined. Reproduced by injecting a HIGH-risk step:
+
+```text
+CRASH: AttributeError 'Pipeline' object has no attribute '_describe_policy_gate'
+```
+
+**Expected:** the task reports ``blocked`` with a clear ``BLOCKED: ...`` / ``CONFIRM: ...`` summary — no crash.
+**Actual (measured):** ``AttributeError: 'Pipeline' object has no attribute '_describe_policy_gate'``.
+**Suspected cause:** naming mismatch:the call site uses ``_describe_policy_gate``; the definition was
+written as ``_policy_gate_summary``.
+**Fix (implemented):** renamed the definition to ``_describe_policy_gate`` (one-line change; smallest possible(.
+**Regression test:** ``test_high_risk_step_reports_blocked_without_crash`` in ``tests/unit/test_pipeline.py``.
+
+
+
+**Evidence:** `python -m pytest tests -q` -> **5 passed** (was 4(.
 
 When the first implementation begins, every real failure must receive a `BUG-*` ID and include:
 - reproduction steps

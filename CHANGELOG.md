@@ -1,11 +1,11 @@
-# Changelog
+﻿# Changelog
 
 **Document:** `CHANGELOG.md`  
-**Status:** Active — records only what has actually been established
+**Status:** Active â€” records only what has actually been established
 
 All notable changes to AERQEN will be documented here.
 
-The project is currently in an early architecture and specification stage. This changelog therefore records decisions, documentation, experiments, implementation milestones, and verified results — not imagined functionality.
+The project is currently in an early architecture and specification stage. This changelog therefore records decisions, documentation, experiments, implementation milestones, and verified results â€” not imagined functionality.
 
 The format is inspired by Keep a Changelog. Semantic versioning will be introduced when actual releasable software versions exist.
 
@@ -13,7 +13,7 @@ The format is inspired by Keep a Changelog. Semantic versioning will be introduc
 
 ## [Unreleased]
 
-### `0.0.0-spec` — AERQEN project foundation
+### `0.0.0-spec` â€” AERQEN project foundation
 
 Established the initial product identity:
 
@@ -49,7 +49,7 @@ Recorded the project owner's decision to release AERQEN under the **MIT License*
 ### Repository structure and onboarding
 
 - Created the target directory structure (`app/`, `core/`, `agents/`, `tools/`, `security/`, `memory/`, `integrations/`, `tests/`, `docs/`, `data/`).
-- Added `OLLAMA_SETUP_GUIDE.md` — a free, non-programmer guide to setting up the local LLM (Ollama) for the accepted ADR-005 decision.
+- Added `OLLAMA_SETUP_GUIDE.md` â€” a free, non-programmer guide to setting up the local LLM (Ollama) for the accepted ADR-005 decision.
 
 ### Phase 0 owner decisions (recorded)
 
@@ -69,7 +69,7 @@ On 2026-08-23 the owner ran and confirmed the acceptance tests.
 
 - Added the AERQEN Python packages under `core/` (task model, brain, planner, executor,
   verifier, pipeline), `security/policy/`, `tools/`, and `app/`.
-- Added `app/entrypoint/cli.py` — a CLI that runs one task through the loop.
+- Added `app/entrypoint/cli.py` â€” a CLI that runs one task through the loop.
 - Added unit tests in `tests/unit/` (`pytest`).
 
 **Measured (recorded):**
@@ -80,6 +80,33 @@ On 2026-08-23 the owner ran and confirmed the acceptance tests.
 
 **Status:** `CRIT-8` is `done` (owner-accepted). `FEAT-1/2/3/4/5/7/9` are `testing`
 (implemented + tests pass, awaiting owner `done` on each; they are part of CRIT-8's build).
+
+### Environment verification (2026-09-03)
+
+On the dev machine (host), installed `pytest` (9.1.1)and re-ran the acceptance gate:
+
+- `python -m pytest tests -q` -> **4 passed**
+- `python -m app.entrypoint.cli "echo hello aerqen"` -> state `done`
+- `python -m app.entrypoint.cli "open office"` -> state `failed` (honest unsupported-command handling..
+
+`Ollama` and the Windows 11 VM are recorded as **not yet installed** on this machine (owner
+action pending. `CRIT-7` stays `building` until the VM/Ollama setup is recorded.
+
+### Bug fix — BUG-1 (policy-gate crash(
+
+Found and fixed a real bug while re-verifying the Phase 1 skeleton:
+
+- **Bug:**the policy-gate path called the undefined method ``_describe_policy_gate``, so a
+  MEDIUM/HIGH-risk step crashed with ``AttributeError`` instead of reporting ``blocked``.
+
+- **Measured reproduction:** injected a HIGH-risk step -> ``AttributeError: 'Pipeline' object has no
+  attribute '_describe_policy_gate'``.
+- **Fix:** renamed ``_policy_gate_summary`` -> ``_describe_policy_gate`` (matches the call site; smallest
+  change..
+- **Regression test added:** ``test_high_risk_step_reports_blocked_without_crash``
+  (``tests/unit/test_pipeline.py``; walks the full blocked path and asserts ``blocked`` + no crash..
+- **Evidence:** `python -m pytest tests -q` -> **5 passed** (was 4(.
+
 
 ### Product scope
 
@@ -170,7 +197,7 @@ No advanced autonomous behavior is to be built merely because it is technically 
 
 **Documentation/specification:** Established.
 
-**Phase:** Phase 0 — Specification and Feasibility.
+**Phase:** Phase 0 â€” Specification and Feasibility.
 
 **Next milestone:** Technical feasibility review and first executable core-agent prototype.
 
