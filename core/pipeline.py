@@ -87,7 +87,7 @@ class Pipeline:
     def _describe(step) -> str:
         return f"{step.tool} risk={step.risk}"
 
-    def _policy_gate_summary(self, blocked, confirm) -> str:
+    def _describe_policy_gate(self, blocked, confirm) -> str:
         parts = []
         if blocked:
             parts.append("BLOCKED: " + "; ".join(self._describe(s) for s in blocked))

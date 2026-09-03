@@ -1,4 +1,4 @@
-"""Tests for the complete Task -> ... -> Report pipeline (FEAT-1..FEAT-9).
+﻿"""Tests for the complete Task -> ... -> Report pipeline (FEAT-1..FEAT-9).
 
 These are REAL executable tests: pytest runs the same modules the CLI uses. A passing
 suite is the "Measured" evidence for CRIT-8.
@@ -7,7 +7,13 @@ suite is the "Measured" evidence for CRIT-8.
 from __future__ import annotations
 
 from app.entrypoint.cli import build_pipeline
-from core.task_manager.models import Task, TaskState
+from core.brain.interface import Brain
+from core.executor.simple import SimpleExecutor
+from core.pipeline import Pipeline
+from core.planner.interface import Planner
+from core.task_manager.models import Step, StepState, Task, TaskState
+from core.verifier.checker import ContractVerifier
+from security.policy.policy import PolicyEngine
 from tools.registry import ToolRegistry, ToolError
 from tools.demo import build_demo_tools
 
@@ -55,3 +61,47 @@ def test_registry_rejects_unknown_tool():
     except ToolError:
         raised = True
     assert raised is True
+
+
+class _HighRiskBrain(Brain):
+    """Test double: understands any input as a HIGH-risk task intent."""
+
+    def understand(self, task: Task) -> None:
+        task.state = TaskState.PLANNED
+        task.intent = {"action": "high-risk"}
+
+
+class _HighRiskPlanner(Planner):
+    """Test double: plans a single HIGH-risk step (must be BLOCKED by policy).."""
+
+    def plan(self, task: Task) -> None:
+        task.state = TaskState.PLANNED
+        task.plan = [
+            Step(
+                step_id=1,
+                tool="demo.echo",
+                input={"message": "hi"},
+                risk="HIGH",
+                expected="tool returns {echo: <same message>}",
+                state=StepState.PENDING,
+            )
+        ]
+
+
+def test_high_risk_step_reports_blocked_without_crash():
+    """Regression test for BUG-1:the policy-block path must report BLOCKED, not
+    crash with AttributeError (pipeline calledthe undefined ``_describe_policy_gate``..
+    """
+    pipeline = Pipeline(
+        brain=_HighRiskBrain(),
+        planner=_HighRiskPlanner(),
+        policy=PolicyEngine(),
+        executor=SimpleExecutor(ToolRegistry()),
+        verifier=ContractVerifier(),
+    )
+    task = Task(task_id="t3", description="high risk test")
+    pipeline.run(task)  # must not raise
+
+    assert task.state is TaskState.BLOCKED, task.report
+    assert task.report["state"] == "blocked"
+    assert task.error and "BLOCKED" in task.error
