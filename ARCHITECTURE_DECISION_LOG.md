@@ -427,7 +427,9 @@ way to leak secrets or grow without bound.
 - **Auto-recall:** at the start of a task the agent loop recalls the most relevant notes
   (simple case-insensitive keyword match, newest first, `AERQEN_MEMORY_RECALL`, default 5)
   and injects them as a system context block labelled as the agent's own notes and as data,
-  not instructions. Memory failures never break a task (they degrade to "no notes").
+  not instructions. If the query keyword-matches nothing (e.g. a different language), it falls
+  back to the most recent notes, so recall does not depend on exact wording. Memory failures
+  never break a task (they degrade to "no notes").
 
 **Alternatives considered**
 - A vector / embedding database: rejected for now as far too heavy for the need; plain
