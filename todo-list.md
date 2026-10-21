@@ -51,7 +51,7 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`..`CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed); `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — safety-gate foundation (owner accepted 2026-10-21); `LLM-1` (agent loop + Ollama) and `FEAT-13` (sandboxed file tools) — owner accepted 2026-10-21. See `done-list.md`. |
-| `testing` | — |
+| `testing` | `FEAT-13+` file superpowers (ADR-011): search/make_dir/append/overwrite/delete, recoverable via `.trash` — 62 tests pass + live multi-step run (2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
 | `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |
@@ -384,16 +384,20 @@ Introduce controlled mouse, keyboard, window, and screen capabilities only after
 
 ## `FEAT-13` — File/document tools
 
-**Phase:** `done`
+**Phase:** `done` (create-only subset, ADR-010) · **`FEAT-13+` extension `testing`** (ADR-011)
 
-First sandboxed file tools shipped (ADR-010): `files.list` / `files.read_text` (LOW) and
-`files.write_text` (MEDIUM, create-only), confined to `AERQEN_WORKSPACE`. Traversal, absolute
+First sandboxed file tools shipped and accepted (ADR-010): `files.list` / `files.read_text` (LOW)
+and `files.write_text` (MEDIUM, create-only), confined to `AERQEN_WORKSPACE`. Traversal, absolute
 paths and drive letters are rejected; the write verifier re-reads and compares sha256.
-Still pending for a later pass: overwrite/append/delete (higher-risk tools), binary/document
-formats, and directory operations.
+
+Extension in `testing` (ADR-011, owner acceptance pending): `files.search` + `files.make_dir`
+(LOW) and `files.append_text` / `files.overwrite_text` / `files.delete` (MEDIUM). Destructive
+actions are recoverable — delete and overwrite route the old content into a workspace `.trash`
+folder. Writes store exact bytes (no newline translation). Still pending for a later pass:
+binary/document formats (PDF/Office), `.trash` auto-purge, and full version history.
 
 **Implemented:** `tools/files.py`, verifier contracts in `core/verifier/checker.py`,
-tests in `tests/unit/test_files.py`.
+tests in `tests/unit/test_files.py` and `tests/unit/test_agent_loop.py`.
 
 ---
 
