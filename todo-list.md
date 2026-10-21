@@ -51,7 +51,7 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`..`CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed); `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — safety-gate foundation (owner accepted 2026-10-21); `LLM-1` (agent loop + Ollama) and `FEAT-13` (sandboxed file tools) — owner accepted 2026-10-21. See `done-list.md`. |
-| `testing` | `FEAT-17` agent memory (ADR-012): durable JSONL notebook + remember/recall/list tools + auto-recall — 75 tests pass + cross-run live demo (2026-10-21), owner acceptance pending |
+| `testing` | `FEAT-17` agent memory (ADR-012): durable JSONL notebook + remember/recall/list tools + auto-recall; `UI-1` local web chat (ADR-013): browser chat for PC + phone, token-gated, web approvals — 83 tests pass + live HTTP demo (2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
 | `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |

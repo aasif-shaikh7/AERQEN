@@ -69,6 +69,12 @@ class Settings:
     memory_max: int = field(default_factory=lambda: _int_env("AERQEN_MEMORY_MAX", 200))
     memory_recall: int = field(default_factory=lambda: _int_env("AERQEN_MEMORY_RECALL", 5))
 
+    # Local web chat UI (ADR-013). Host 0.0.0.0 lets a phone on the same WiFi reach it.
+    # A token (printed in the URL) stops other devices on the network from driving the agent.
+    web_host: str = field(default_factory=lambda: os.getenv("AERQEN_WEB_HOST", "0.0.0.0"))
+    web_port: int = field(default_factory=lambda: _int_env("AERQEN_WEB_PORT", 8765))
+    web_token: str = field(default_factory=lambda: os.getenv("AERQEN_WEB_TOKEN", ""))
+
 
 def load_settings() -> Settings:
     return Settings()
