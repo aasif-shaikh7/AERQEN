@@ -240,3 +240,39 @@ approval was `blocked` and created no file — both the yes and no paths verifie
 - Only the three file tools exist; no web/browser, computer control, or memory yet.
 - Agent quality depends on the local model; a model that never stops calling tools will hit the
   step budget and fail rather than finish.
+
+---
+
+## Phase 2 — file superpowers (FEAT-13 extension, ADR-011 — done)
+
+**Owner accepted on 2026-10-21** (ADR-011 Accepted) after running the agent himself.
+
+**What was requested:** let the agent do real file work — edit, add to, remove, search, and make
+folders — without weakening the sandbox or risking the loss of the user's data.
+
+**What was established:**
+- New tools, all confined to `AERQEN_WORKSPACE`: `files.search` + `files.make_dir` (LOW), and
+  `files.append_text` / `files.overwrite_text` / `files.delete` (MEDIUM — approval + audit).
+- **Nothing is destroyed permanently:** `files.delete` moves the file into a workspace `.trash`
+  folder; `files.overwrite_text` copies the previous version to `.trash` before replacing it.
+  `files.delete` refuses folders; search/list hide `.trash` and `.gitkeep`.
+- Writes store **exact bytes** (binary, no OS newline translation). A live run on Windows exposed
+  that text-mode writes translated `\n`→`\r\n`, which broke the sha256 verifier on files with
+  newlines; fixed before acceptance.
+
+**How it is known (Measured, 2026-10-21 — qwen2.5:7b):**
+`python -m pytest tests -q -m "not live"` → **62 passed**; the `live` Ollama test → **1 passed**.
+Live multi-step agent run chained `files.write_text` → `files.append_text` → `files.read_text`
+and summarized (`shopping.txt` → `buy milk\nbuy eggs\n`, 18 bytes, each mutating step
+sha256-verified). Owner run (`task-0fa0a379`): `files.make_dir` ran automatically (LOW), then
+`files.write_text` asked for approval (MEDIUM) and created `notes/today.txt` = `hello` — confirming
+the risk tiering (LOW auto, MEDIUM asks) end to end.
+
+**Built:** `tools/files.py` (new tools + `.trash` helper + exact-byte writes), verifier contracts
+in `core/verifier/checker.py` via `tools/files.py`, `tests/unit/test_files.py`,
+`tests/unit/test_agent_loop.py` (read→summarize flow).
+
+**Limitations (recorded honestly):**
+- No binary/document formats yet (PDF/Office); UTF-8 text only.
+- `.trash` has no auto-purge, and overwrite keeps only a single point-in-time backup (no full
+  version history).

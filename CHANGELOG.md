@@ -169,7 +169,7 @@ On the dev machine (host(, per owner coordination:
   re-read with a matching sha256 (`report.txt` -> `AERQEN is alive.`). With no approver the same
   write was `blocked` / `approval: denied` and no file was created.
 
-### Phase 2 — file superpowers (2026-10-21; owner acceptance pending)
+### Phase 2 — file superpowers (2026-10-21; owner accepted 2026-10-21)
 
 - **New file tools (ADR-011, proposed):** `files.search` and `files.make_dir` (LOW),
   `files.append_text`, `files.overwrite_text`, `files.delete` (MEDIUM, approval + audit).
