@@ -19,7 +19,7 @@ class ContractVerifier(Verifier):
 
         result = step.result or {}
 
-        if step.tool == "demo.echo":
+        if step.tool in ("demo.echo", "demo.echo_guarded"):
             expected = (step.input or {}).get("message")
             echoed = result.get("echo")
             if expected is not None and echoed == expected:

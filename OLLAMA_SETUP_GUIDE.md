@@ -121,11 +121,11 @@ If it prints something like `{"models":[...]}`, the Ollama API is running.
 
 ## 8. Status
 
-| Item | Evidence |
-|---|---|
-| Ollama installed | **Unverified** until you run `ollama --version` |
-| Model downloaded | **Unverified** until `ollama pull` completes |
-| Model answers | **Measured** only after you run the step-4 test and record the reply |
+| Item | Evidence (2026-09-03( |
+|---|---|---|
+| Ollama installed | **Measured** — `ollama --version` -> `version is 0.33.2` |
+| Model downloaded | **Measured** — `ollama pull qwen2.5:7b` completed;; `ollama list` -> `qwen2.5:7b  4.7 GB` |
+| Model answers | **Measured** — `ollama run qwen2.5:7b "What is  ️5+7?"` -> replied `12` (2026-09-03; non-interactive run(; |
 
 Update this table honestly as you complete each step.
 

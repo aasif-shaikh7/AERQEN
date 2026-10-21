@@ -51,9 +51,9 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`, `CRIT-2`, `CRIT-3`, `CRIT-4`, `CRIT-5`, `CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed) |
-| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-7`, `FEAT-9` — implemented, unit tests pass, owner acceptance pending |
+| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — implemented, 31 tests pass (2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
-| `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-6` (approval UI, Phase 2); `FEAT-8` (real observation, Phase 3) |
+| `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3); LLM brain via Ollama (next) |
 | `blocked` | Public brand/legal clearance before commercial launch |
 | `superseded` | — |
 
@@ -149,6 +149,20 @@ No section remains an open `TBD`.
 **Still open:** the actual development environment (Windows 11 VM, Ollama, Python libs)
 must be installed and verified by the owner using `VM_SETUP_GUIDE.md` and
 `OLLAMA_SETUP_GUIDE.md`. This part stays `pending` until the owner records it.
+**Environment status on the dev machine (Measured 2026-09-03(:**
+- `Python 3.12.10` — installed and verified (`python --version`..
+- `pytest` (9.1.1) — installed;; the acceptance-gate commands re-run green:
+  - `python -m pytest tests -q` -> **5 passed** (0.04s..
+  - `python -m app.entrypoint.cli "echo hello aerqen"` -> state `done`.
+  - `python -m app.entrypoint.cli "open office"` -> state `failed` (honest unsupported-command handling..
+- `Ollama` `0.33.2` — installed via `winget`;; **Measured:** `ollama --version` -> `version is 0.33.2`.
+- Model `qwen2.5:7b` (4.7 GB) — downloaded;; **Measured:** `ollama list` lists it. AI-reply test
+  (`ollama run qwen2.5:7b`) -> `12` (measured;; non-interactive run(.
+- `VirtualBox` `7.2.16r174877` — installed via `winget`;; **Measured:** `VBoxManage.exe --version` -> `7.2.16r174877`.
+- VM `AERQEN-Win11` — created + configured via `VBoxManage`;; **Measured:** `.vbox` XML shows EFI, TPM 2.0,
+  ️4096 MB RAM,  ️4 CPUs, NAT, SATA controller + 50 GB disk + DVD slot attached. Secure Boot is not
+  exposed by this VirtualBox build (known limitation;; Windows 11 setup proceeds via registry bypass(.
+- Windows  ️11 ISO download — **owner action pending** (official Microsoft route, ~6 GB;; attach to the VM per `VM_SETUP_GUIDE.md` and run Windows setup(; VM already created+configured(.
 
 **Rule:** Unknowns are experiments, not assumptions.
 
@@ -190,7 +204,30 @@ No unrestricted computer control is required for this milestone.
 
 # 2. Errors and bugs
 
-No implementation bugs have been recorded yet.
+### `BUG-1` — Pipeline crashes (AttributeError( at the policy gate on a CONFIRM/BLOCK step
+
+**Phase:** `testing` (fixed + tests pass; awaiting owner acceptance(.
+
+
+
+**Reproduction (Measured 2026-09-03(:** A plan containing a MEDIUM or HIGH-risk step enters
+the policy-gate path, which calls ``self._describe_policy_gate(...)`` — a method that was never
+defined. Reproduced by injecting a HIGH-risk step:
+
+```text
+CRASH: AttributeError 'Pipeline' object has no attribute '_describe_policy_gate'
+```
+
+**Expected:** the task reports ``blocked`` with a clear ``BLOCKED: ...`` / ``CONFIRM: ...`` summary — no crash.
+**Actual (measured):** ``AttributeError: 'Pipeline' object has no attribute '_describe_policy_gate'``.
+**Suspected cause:** naming mismatch:the call site uses ``_describe_policy_gate``; the definition was
+written as ``_policy_gate_summary``.
+**Fix (implemented):** renamed the definition to ``_describe_policy_gate`` (one-line change; smallest possible(.
+**Regression test:** ``test_high_risk_step_reports_blocked_without_crash`` in ``tests/unit/test_pipeline.py``.
+
+
+
+**Evidence:** `python -m pytest tests -q` -> **5 passed** (was 4(.
 
 When the first implementation begins, every real failure must receive a `BUG-*` ID and include:
 - reproduction steps
@@ -243,6 +280,9 @@ Create a controlled registry describing what each tool can do, its inputs, risk 
 
 **Implemented:** `tools/registry.py` (Tool/ToolRegistry) + `tools/demo.py`. Covered by unit tests.
 
+**2026-10-21:** every tool now declares an input schema, and `Tool.run` rejects unknown, missing or wrongly typed
+parameters. The declared risk is validated and is authoritative (ADR-009). Tests: `tests/security/test_safety_gates.py`.
+
 ---
 
 ## `FEAT-5` — Security policy engine
@@ -258,20 +298,26 @@ BLOCK
 ```
 
 **Implemented:** `security/policy/policy.py` (PolicyEngine). HIGH risk defaults to BLOCK
-for the MVP; CONFIRM is surfaced but no interactive approval UI exists yet (see FEAT-6).
+for the MVP; CONFIRM steps go to the approval gate (FEAT-6).
 Covered by unit tests.
+
+**2026-10-21:** `PolicyEngine.decide_step` resolves the effective risk as max(planner, tool). Unknown tools
+and unrecognised risk labels are BLOCKed (ADR-009, proposed).
 
 ---
 
 ## `FEAT-6` — Approval system
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Provide human approval gates for high-impact actions.
 
-**Status note:** The policy engine emits `CONFIRM`, but there is no interactive approval
-UI yet. This is intentionally deferred past the Phase 1 skeleton MVP (the MVP has no
-MEDIUM/HIGH tool to approve). It becomes `building` in Phase 2 (Safe Tool System).
+**Implemented (2026-10-21):** `security/approvals/approver.py`: `DenyAllApprover` (default) and `CliApprover`
+(terminal y/N; only an explicit y/yes approves, and EOF means no). The pipeline asks before anything runs.
+A BLOCK step is never offered for approval.
+**Try it:** `python -m app.entrypoint.cli "guarded echo hello"`, then answer `y` (expected `done`) or press Enter (expected `blocked`).
+**Limitation:** CLI only. There is no web UI yet, and HIGH stays BLOCK (SECURITY.md lets HIGH run with explicit
+confirmation; enabling that is a separate owner decision).
 
 ---
 
@@ -318,7 +364,11 @@ Classify failures and perform bounded recovery attempts before safely stopping.
 
 ## `FEAT-11` — Audit logging
 
-**Phase:** `pending`
+**Phase:** `testing`
+
+**Implemented (2026-10-21):** `security/audit/log.py` writes JSONL to `data/logs/audit.jsonl` (gitignored).
+Secret-looking keys are redacted, strings are truncated to 200 characters, and writing is fail-closed.
+**Limitation:** no rotation or retention policy yet.
 
 Record important decisions, approvals, actions, failures, and results without exposing secrets.
 
