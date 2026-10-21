@@ -38,6 +38,7 @@ secret*
 data/logs/*
 data/runtime/*
 data/test/*
+data/workspace/*
 !data/**/.gitkeep
 *.log
 logs/

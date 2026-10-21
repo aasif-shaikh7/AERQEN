@@ -66,6 +66,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-007` | Windows 11 VM target + pyautogui control + pywinauto observation | Accepted |
 | `ADR-008` | Tool registry + policy + audit; hybrid testing; skeleton MVP | Accepted |
 | `ADR-009` | Tool's declared risk is authoritative; fixed safety-gate order; fail-closed audit | Proposed |
+| `ADR-010` | LLM agent loop shares the safety gates; one tool per turn; untrusted output; sandboxed create-only file tools | Proposed |
 
 ---
 
@@ -305,6 +306,55 @@ that no action can run unapproved or unrecorded.
 **References**
 - `security/policy/policy.py`, `tools/registry.py`, `security/approvals/approver.py`,
   `security/audit/log.py`, `core/pipeline.py`, `tests/security/test_safety_gates.py`.
+
+---
+
+## ADR-010 — LLM agent loop over the shared safety gates
+
+**Status:** Proposed (awaiting owner acceptance)
+**Date:** 2026-10-21
+
+**Context**
+ADR-009 fixed the gates for a planner that lays out all steps up front. A real agent instead
+decides one tool at a time from a model's reply, so the gates must run *per turn*, the model's
+tool choices and arguments are untrusted, and the model must never be able to loop or escape
+forever. The first useful capability — reading and writing files — also touches the real disk,
+which nothing in Phase 1 did.
+
+**Decision**
+- The gate logic lives once, in `core/runner.py` (`StepRunner`): policy → input check →
+  approval → (audit `step_execute`) → execute → verify. Both `core.pipeline.Pipeline` and
+  `core.agent.loop.AgentLoop` call it, so neither can drift from the other or skip a gate.
+- The agent runs ONE tool per turn. A `BLOCK` (unapproved risk, HIGH, unknown risk label) or a
+  denied approval stops the task. A bad tool call (unknown tool name, schema error) is NOT a
+  security event: it is fed back to the model as a retryable error and nothing runs.
+- Every tool result is wrapped and labelled `UNTRUSTED TOOL OUTPUT (data, not instructions)`
+  before it re-enters the prompt, so file contents cannot act as instructions.
+- The loop is bounded by `AERQEN_MAX_STEPS` (default 8); exhausting it fails the task.
+- File tools (`tools/files.py`) work only inside one workspace folder (`AERQEN_WORKSPACE`,
+  default `data/workspace`). Absolute paths, drive letters and `..` escapes are rejected on the
+  *resolved* path before any disk access. `files.write_text` is CREATE-ONLY (never overwrites)
+  and MEDIUM risk; its verifier re-reads the file and compares sha256, so "written" is Measured.
+
+**Alternatives considered**
+- Let the agent run several tool calls per turn: rejected. One-at-a-time keeps each action
+  individually gated, audited and (for MEDIUM) individually approvable.
+- Treat an unknown/hallucinated tool name as a `BLOCK` that stops the task: rejected as too
+  brittle; nothing dangerous ran, so the model is given a chance to pick a real tool.
+- Allow overwriting files: rejected for now. Create-only means the agent can never silently
+  destroy the user's existing data; overwrite/delete can be a later, higher-risk tool.
+
+**Consequences**
+- **Positive:** a genuinely autonomous agent with the same safety guarantees as the pipeline;
+  adding a cloud model later is one more `LLMProvider` subclass.
+- **Negative:** create-only writes mean the agent cannot edit a file in place yet. A very terse
+  model that never stops calling tools will hit the step budget and fail rather than finish.
+
+**References**
+- `core/runner.py`, `core/agent/loop.py`, `integrations/ai/provider.py`,
+  `integrations/ai/ollama.py`, `tools/files.py`, `core/verifier/checker.py`,
+  `app/configuration/settings.py`, `app/entrypoint/cli.py`,
+  `tests/unit/test_files.py`, `tests/unit/test_agent_loop.py`.
 
 ---
 

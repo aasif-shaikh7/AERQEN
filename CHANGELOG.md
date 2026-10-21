@@ -144,6 +144,31 @@ On the dev machine (host(, per owner coordination:
   `guarded echo hello` with no answer -> `blocked` / `approval: denied`; `open office` -> `failed`.
   The audit file contained the expected event sequence.
 
+### Phase 2 — first LLM agent loop (2026-10-21; owner acceptance pending)
+
+- **Shared gate runner (ADR-010, proposed):** `core/runner.py` (`StepRunner`) holds the gate logic
+  once; `core/pipeline.py` was refactored to use it, so the fixed-plan pipeline and the new agent
+  cannot drift apart. The 31 foundation tests still pass unchanged after the refactor.
+- **LLM provider adapter (ADR-005):** `integrations/ai/provider.py` defines a provider-neutral
+  interface; `integrations/ai/ollama.py` talks to Ollama's `/api/chat` using only the standard
+  library (urllib). URL and model come from env (`AERQEN_OLLAMA_URL`, `AERQEN_OLLAMA_MODEL`).
+- **Agent loop:** `core/agent/loop.py` asks the model for one tool per turn, runs it through the
+  gates, feeds the (untrusted) result back, and stops on a final answer, a BLOCK, a denial, or the
+  `AERQEN_MAX_STEPS` budget (default 8). Tool output is labelled untrusted before re-entering the prompt.
+- **Sandboxed file tools (ADR-010):** `tools/files.py` adds `files.list` / `files.read_text` (LOW)
+  and `files.write_text` (MEDIUM, create-only). All paths are confined to `AERQEN_WORKSPACE`
+  (default `data/workspace`); traversal, absolute paths and drive letters are rejected. The write
+  verifier re-reads the file and compares sha256.
+- **CLI:** new `--agent` flag runs the LLM loop; the default (no flag) pipeline is unchanged.
+- **Tests:** added `tests/unit/test_files.py` (sandbox + create-only) and
+  `tests/unit/test_agent_loop.py` (a `FakeProvider` drives the loop; one `live` test talks to real
+  Ollama and skips when it is down).
+- **Evidence (Measured, 2026-10-21, NVIDIA 597.16 / T1000, qwen2.5:7b):**
+  `python -m pytest tests -q -m "not live"` -> **51 passed**; the `live` test -> **1 passed** (12.9s).
+  Live CLI/demo run: the agent called `files.write_text`, approval was granted, and the file was
+  re-read with a matching sha256 (`report.txt` -> `AERQEN is alive.`). With no approver the same
+  write was `blocked` / `approval: denied` and no file was created.
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.
