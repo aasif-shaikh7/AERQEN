@@ -125,7 +125,7 @@ On the dev machine (host(, per owner coordination:
 - Run Windows setup inside the VM per `VM_SETUP_GUIDE.md`; then record `CRIT-7` as done in `todo-list.md`.
 
 
-### Phase 2 foundation — safety gates (2026-10-21; owner acceptance pending)
+### Phase 2 foundation — safety gates (2026-10-21; owner accepted 2026-10-21)
 
 - **Registry-authoritative risk (ADR-009, proposed):** the effective risk of a step is now
   `max(planner risk, tool's declared risk)`. Unknown tools and unrecognised risk labels are blocked.
@@ -144,7 +144,7 @@ On the dev machine (host(, per owner coordination:
   `guarded echo hello` with no answer -> `blocked` / `approval: denied`; `open office` -> `failed`.
   The audit file contained the expected event sequence.
 
-### Phase 2 — first LLM agent loop (2026-10-21; owner acceptance pending)
+### Phase 2 — first LLM agent loop (2026-10-21; owner accepted 2026-10-21)
 
 - **Shared gate runner (ADR-010, proposed):** `core/runner.py` (`StepRunner`) holds the gate logic
   once; `core/pipeline.py` was refactored to use it, so the fixed-plan pipeline and the new agent

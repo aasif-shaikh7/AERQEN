@@ -174,3 +174,69 @@ tests, matching `todo-list.md` -> `CRIT-8`.
 - No computer control, filesystem mutation, or external service.
 - No interactive approval UI (FEAT-6) and no real screen observation (FEAT-8) — both are
   explicit later-phase capabilities.
+
+---
+
+## Phase 2 foundation — safety gates (FEAT-1..7, FEAT-9, FEAT-11 — done)
+
+**Owner accepted this milestone on 2026-10-21** (ADR-009 Accepted), matching
+`todo-list.md` state table and PR #1.
+
+**What was requested:** make risk authoritative so a planner/LLM cannot talk a risky tool
+down to LOW; fix the order of the safety gates; make the approval and audit gates real.
+
+**What was established:**
+- A tool's declared risk in the registry is authoritative; effective risk =
+  `max(planner risk, tool risk)`. Unknown tools and unknown risk labels are BLOCKed.
+- Every tool declares an input schema; unknown/missing/mistyped parameters are rejected.
+- Fixed gate order: Policy → Input check → Approval → (audit `step_execute`) → Execute → Verify.
+- Fail-closed JSONL audit with secret redaction and string truncation; `DenyAllApprover` default.
+
+**How it is known (Measured, 2026-10-21):** `python -m pytest tests -q` → **31 passed**.
+Mutation check: removing the registry term from the risk rule makes 6 tests fail. CLI:
+`guarded echo hello` with no answer → `blocked` / `approval: denied`; the audit file held the
+expected event sequence.
+
+**Built:** `tools/registry.py`, `security/policy/policy.py`, `security/approvals/approver.py`,
+`security/audit/log.py`, `core/pipeline.py`, `tools/demo.py`, `tests/security/test_safety_gates.py`.
+
+**Limitations:** the brain/planner were still the mock/naive ones at this stage (the LLM agent
+is the next entry). No overwrite/delete tools; no computer control.
+
+---
+
+## Phase 2 — first LLM agent loop + sandboxed file tools (LLM-1, FEAT-13 — done)
+
+**Owner accepted this milestone on 2026-10-21** (ADR-005 / ADR-010 Accepted), matching
+`todo-list.md` state table and PR #2. The owner also ran the agent himself and confirmed it.
+
+**What was requested:** turn AERQEN into a real agent — a local LLM that chooses tools and
+actually does work — without weakening any of the safety gates.
+
+**What was established:**
+- `core/runner.py` (`StepRunner`) is the single home for the gates; both `core/pipeline.py`
+  (refactored) and `core/agent/loop.py` use it, so the two cannot drift apart.
+- The agent asks Ollama (`integrations/ai/`, stdlib only) for one tool per turn, runs it through
+  the gates, and feeds the result back labelled UNTRUSTED. Bounded by `AERQEN_MAX_STEPS` (8).
+- Sandboxed file tools (`tools/files.py`): `files.list` / `files.read_text` (LOW) and
+  `files.write_text` (MEDIUM, create-only), confined to `AERQEN_WORKSPACE`. Traversal, absolute
+  paths and drive letters are rejected; the write is verified by re-read + sha256.
+- CLI `--agent` flag; the default pipeline is unchanged.
+
+**How it is known (Measured, 2026-10-21 — NVIDIA 597.16 / T1000, qwen2.5:7b):**
+`python -m pytest tests -q -m "not live"` → **51 passed**; the `live` Ollama test → **1 passed**.
+Owner run (`task-9a7d3180`): the agent chose `files.write_text`, approval was granted, and
+`data/workspace/notes.txt` was created with content `hello` and a matching sha256
+(audit outcome *"Measured: file re-read from disk; sha256 matches"*). A separate run with no
+approval was `blocked` and created no file — both the yes and no paths verified.
+
+**Built:** `integrations/ai/provider.py`, `integrations/ai/ollama.py`, `core/agent/loop.py`,
+`core/runner.py`, `tools/files.py`, `core/verifier/checker.py` (contract registration),
+`app/configuration/settings.py`, `app/entrypoint/cli.py` (`--agent`),
+`tests/unit/test_files.py`, `tests/unit/test_agent_loop.py`.
+
+**Limitations (recorded honestly):**
+- `files.write_text` is create-only — the agent cannot yet edit or delete a file.
+- Only the three file tools exist; no web/browser, computer control, or memory yet.
+- Agent quality depends on the local model; a model that never stops calling tools will hit the
+  step budget and fail rather than finish.

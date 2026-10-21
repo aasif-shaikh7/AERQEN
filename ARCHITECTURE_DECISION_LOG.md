@@ -65,8 +65,8 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-006` | All-local deployment (Phase 1) | Accepted |
 | `ADR-007` | Windows 11 VM target + pyautogui control + pywinauto observation | Accepted |
 | `ADR-008` | Tool registry + policy + audit; hybrid testing; skeleton MVP | Accepted |
-| `ADR-009` | Tool's declared risk is authoritative; fixed safety-gate order; fail-closed audit | Proposed |
-| `ADR-010` | LLM agent loop shares the safety gates; one tool per turn; untrusted output; sandboxed create-only file tools | Proposed |
+| `ADR-009` | Tool's declared risk is authoritative; fixed safety-gate order; fail-closed audit | Accepted |
+| `ADR-010` | LLM agent loop shares the safety gates; one tool per turn; untrusted output; sandboxed create-only file tools | Accepted |
 
 ---
 
@@ -269,7 +269,7 @@ observation technology before Phase 1 coding.
 
 ## ADR-009 — Registry-authoritative risk, fixed gate order, fail-closed audit
 
-**Status:** Proposed (awaiting owner acceptance)
+**Status:** Accepted (owner accepted 2026-10-21)
 **Date:** 2026-10-21
 
 **Context**
@@ -311,7 +311,7 @@ that no action can run unapproved or unrecorded.
 
 ## ADR-010 — LLM agent loop over the shared safety gates
 
-**Status:** Proposed (awaiting owner acceptance)
+**Status:** Accepted (owner accepted 2026-10-21)
 **Date:** 2026-10-21
 
 **Context**

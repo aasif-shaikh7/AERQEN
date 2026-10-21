@@ -50,8 +50,8 @@ An item is never deleted merely to make the queue look shorter.
 
 | Phase | Items |
 |---|---|
-| `done` | `CRIT-1`, `CRIT-2`, `CRIT-3`, `CRIT-4`, `CRIT-5`, `CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed) |
-| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — foundation, 31 tests pass (2026-10-21), owner acceptance pending; `LLM-1` (agent loop + Ollama) and `FEAT-13` (file tools) — 52 tests pass (51 fake + 1 live, 2026-10-21), owner acceptance pending |
+| `done` | `CRIT-1`..`CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed); `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — safety-gate foundation (owner accepted 2026-10-21); `LLM-1` (agent loop + Ollama) and `FEAT-13` (sandboxed file tools) — owner accepted 2026-10-21. See `done-list.md`. |
+| `testing` | — |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
 | `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |
@@ -206,7 +206,7 @@ No unrestricted computer control is required for this milestone.
 
 ### `BUG-1` — Pipeline crashes (AttributeError( at the policy gate on a CONFIRM/BLOCK step
 
-**Phase:** `testing` (fixed + tests pass; awaiting owner acceptance(.
+**Phase:** `done` (fixed + tests pass; awaiting owner acceptance(.
 
 
 
@@ -244,7 +244,7 @@ When the first implementation begins, every real failure must receive a `BUG-*` 
 
 ## `FEAT-1` — Core task model
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Create a structured representation of a user task, its state, inputs, outputs, permissions, and result.
 
@@ -254,7 +254,7 @@ Create a structured representation of a user task, its state, inputs, outputs, p
 
 ## `FEAT-2` — Brain interface
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Convert natural-language input into structured task understanding without directly executing computer actions.
 
@@ -264,7 +264,7 @@ Convert natural-language input into structured task understanding without direct
 
 ## `FEAT-3` — Planner
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Create explicit, inspectable plans with steps, dependencies, required tools, and expected outcomes.
 
@@ -274,7 +274,7 @@ Create explicit, inspectable plans with steps, dependencies, required tools, and
 
 ## `FEAT-4` — Tool registry
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Create a controlled registry describing what each tool can do, its inputs, risk level, permissions, and output.
 
@@ -287,7 +287,7 @@ parameters. The declared risk is validated and is authoritative (ADR-009). Tests
 
 ## `FEAT-5` — Security policy engine
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Evaluate actions before execution and decide:
 
@@ -308,7 +308,7 @@ and unrecognised risk labels are BLOCKed (ADR-009, proposed).
 
 ## `FEAT-6` — Approval system
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Provide human approval gates for high-impact actions.
 
@@ -323,7 +323,7 @@ confirmation; enabling that is a separate owner decision).
 
 ## `FEAT-7` — Executor
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Execute approved tool actions and return structured results.
 
@@ -345,7 +345,7 @@ capability and remains `pending`. FEAT-7 covers result capture for now.
 
 ## `FEAT-9` — Verification engine
 
-**Phase:** `testing`
+**Phase:** `done`
 
 Determine whether an action actually achieved its intended result.
 
@@ -364,7 +364,7 @@ Classify failures and perform bounded recovery attempts before safely stopping.
 
 ## `FEAT-11` — Audit logging
 
-**Phase:** `testing`
+**Phase:** `done`
 
 **Implemented (2026-10-21):** `security/audit/log.py` writes JSONL to `data/logs/audit.jsonl` (gitignored).
 Secret-looking keys are redacted, strings are truncated to 200 characters, and writing is fail-closed.
@@ -384,7 +384,7 @@ Introduce controlled mouse, keyboard, window, and screen capabilities only after
 
 ## `FEAT-13` — File/document tools
 
-**Phase:** `testing`
+**Phase:** `done`
 
 First sandboxed file tools shipped (ADR-010): `files.list` / `files.read_text` (LOW) and
 `files.write_text` (MEDIUM, create-only), confined to `AERQEN_WORKSPACE`. Traversal, absolute
@@ -399,7 +399,7 @@ tests in `tests/unit/test_files.py`.
 
 ## `LLM-1` — LLM agent loop (Ollama)
 
-**Phase:** `testing`
+**Phase:** `done`
 
 The first real agent: a model picks one tool per turn and each turn passes the shared safety
 gates (`core/runner.py`), with untrusted tool output and a bounded step budget (ADR-005/ADR-010).
