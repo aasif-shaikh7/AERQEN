@@ -92,12 +92,17 @@ def test_high_risk_step_reports_blocked_without_crash():
     """Regression test for BUG-1:the policy-block path must report BLOCKED, not
     crash with AttributeError (pipeline calledthe undefined ``_describe_policy_gate``..
     """
+    # Real demo registry: demo.echo is declared LOW, so this proves the planner's HIGH
+    # claim is honoured (risk can be raised, never lowered) and the step is BLOCKED.
+    registry = ToolRegistry()
+    build_demo_tools(registry)
     pipeline = Pipeline(
         brain=_HighRiskBrain(),
         planner=_HighRiskPlanner(),
         policy=PolicyEngine(),
-        executor=SimpleExecutor(ToolRegistry()),
+        executor=SimpleExecutor(registry),
         verifier=ContractVerifier(),
+        registry=registry,
     )
     task = Task(task_id="t3", description="high risk test")
     pipeline.run(task)  # must not raise
@@ -105,3 +110,5 @@ def test_high_risk_step_reports_blocked_without_crash():
     assert task.state is TaskState.BLOCKED, task.report
     assert task.report["state"] == "blocked"
     assert task.error and "BLOCKED" in task.error
+    assert "risk=HIGH" in task.error
+    assert task.plan[0].result is None  # never executed

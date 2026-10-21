@@ -125,6 +125,25 @@ On the dev machine (host(, per owner coordination:
 - Run Windows setup inside the VM per `VM_SETUP_GUIDE.md`; then record `CRIT-7` as done in `todo-list.md`.
 
 
+### Phase 2 foundation — safety gates (2026-10-21; owner acceptance pending)
+
+- **Registry-authoritative risk (ADR-009, proposed):** the effective risk of a step is now
+  `max(planner risk, tool's declared risk)`. Unknown tools and unrecognised risk labels are blocked.
+- **Tool input schemas (FEAT-4):** every tool declares its parameters. Unknown, missing or
+  wrongly typed parameters are rejected before approval and again inside `Tool.run`.
+- **Approval gate (FEAT-6):** `security/approvals/approver.py` provides `DenyAllApprover` (default)
+  and `CliApprover` (needs an explicit y/yes). New harmless demo command `guarded echo <msg>`
+  uses a MEDIUM-declared tool so the gate can be tried by hand.
+- **Audit log (FEAT-11):** `security/audit/log.py` writes JSONL to `data/logs/audit.jsonl`,
+  redacts secret-looking keys, truncates long strings, and fails closed.
+- **Pipeline:** fixed gate order. Execution now stops at the first failed step. CLI task ids are unique per run.
+- **Tests:** strengthened the BUG-1 regression test, which had started to pass for the wrong reason
+  (empty registry), and added `tests/security/test_safety_gates.py`.
+- **Evidence (Measured, 2026-10-21):** `python -m pytest tests -q` -> **31 passed**. Mutation check:
+  removing the registry term from the risk rule makes 6 tests fail. CLI: `echo hello aerqen` -> `done`;
+  `guarded echo hello` with no answer -> `blocked` / `approval: denied`; `open office` -> `failed`.
+  The audit file contained the expected event sequence.
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.

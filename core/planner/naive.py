@@ -28,6 +28,20 @@ class NaivePlanner(Planner):
                     state=StepState.PENDING,
                 )
             ]
+        elif action == "guarded_echo":
+            message = intent.get("message", "")
+            task.plan = [
+                Step(
+                    step_id=1,
+                    tool="demo.echo_guarded",
+                    input={"message": message},
+                    # The planner only proposes a risk. The policy engine raises it to
+                    # the tool's declared level if this is lower (ADR-009).
+                    risk="MEDIUM",
+                    expected="tool returns {echo: <same message>} after user approval",
+                    state=StepState.PENDING,
+                )
+            ]
         else:
             task.state = TaskState.FAILED
             task.error = f"NaivePlanner has no plan for intent {action!r}."

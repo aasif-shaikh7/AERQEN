@@ -51,9 +51,9 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`, `CRIT-2`, `CRIT-3`, `CRIT-4`, `CRIT-5`, `CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed) |
-| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-7`, `FEAT-9` — implemented, unit tests pass, owner acceptance pending |
+| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — implemented, 31 tests pass (2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
-| `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-6` (approval UI, Phase 2); `FEAT-8` (real observation, Phase 3) |
+| `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3); LLM brain via Ollama (next) |
 | `blocked` | Public brand/legal clearance before commercial launch |
 | `superseded` | — |
 
@@ -280,6 +280,9 @@ Create a controlled registry describing what each tool can do, its inputs, risk 
 
 **Implemented:** `tools/registry.py` (Tool/ToolRegistry) + `tools/demo.py`. Covered by unit tests.
 
+**2026-10-21:** every tool now declares an input schema, and `Tool.run` rejects unknown, missing or wrongly typed
+parameters. The declared risk is validated and is authoritative (ADR-009). Tests: `tests/security/test_safety_gates.py`.
+
 ---
 
 ## `FEAT-5` — Security policy engine
@@ -295,20 +298,26 @@ BLOCK
 ```
 
 **Implemented:** `security/policy/policy.py` (PolicyEngine). HIGH risk defaults to BLOCK
-for the MVP; CONFIRM is surfaced but no interactive approval UI exists yet (see FEAT-6).
+for the MVP; CONFIRM steps go to the approval gate (FEAT-6).
 Covered by unit tests.
+
+**2026-10-21:** `PolicyEngine.decide_step` resolves the effective risk as max(planner, tool). Unknown tools
+and unrecognised risk labels are BLOCKed (ADR-009, proposed).
 
 ---
 
 ## `FEAT-6` — Approval system
 
-**Phase:** `pending`
+**Phase:** `testing`
 
 Provide human approval gates for high-impact actions.
 
-**Status note:** The policy engine emits `CONFIRM`, but there is no interactive approval
-UI yet. This is intentionally deferred past the Phase 1 skeleton MVP (the MVP has no
-MEDIUM/HIGH tool to approve). It becomes `building` in Phase 2 (Safe Tool System).
+**Implemented (2026-10-21):** `security/approvals/approver.py`: `DenyAllApprover` (default) and `CliApprover`
+(terminal y/N; only an explicit y/yes approves, and EOF means no). The pipeline asks before anything runs.
+A BLOCK step is never offered for approval.
+**Try it:** `python -m app.entrypoint.cli "guarded echo hello"`, then answer `y` (expected `done`) or press Enter (expected `blocked`).
+**Limitation:** CLI only. There is no web UI yet, and HIGH stays BLOCK (SECURITY.md lets HIGH run with explicit
+confirmation; enabling that is a separate owner decision).
 
 ---
 
@@ -355,7 +364,11 @@ Classify failures and perform bounded recovery attempts before safely stopping.
 
 ## `FEAT-11` — Audit logging
 
-**Phase:** `pending`
+**Phase:** `testing`
+
+**Implemented (2026-10-21):** `security/audit/log.py` writes JSONL to `data/logs/audit.jsonl` (gitignored).
+Secret-looking keys are redacted, strings are truncated to 200 characters, and writing is fail-closed.
+**Limitation:** no rotation or retention policy yet.
 
 Record important decisions, approvals, actions, failures, and results without exposing secrets.
 

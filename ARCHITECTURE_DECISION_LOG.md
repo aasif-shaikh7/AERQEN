@@ -65,6 +65,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-006` | All-local deployment (Phase 1) | Accepted |
 | `ADR-007` | Windows 11 VM target + pyautogui control + pywinauto observation | Accepted |
 | `ADR-008` | Tool registry + policy + audit; hybrid testing; skeleton MVP | Accepted |
+| `ADR-009` | Tool's declared risk is authoritative; fixed safety-gate order; fail-closed audit | Proposed |
 
 ---
 
@@ -262,6 +263,48 @@ observation technology before Phase 1 coding.
 
 **References**
 - `CRIT-8` (MVP loop), `SECURITY.md`, `ARCHITECTURE.md` (tool/security modules), `TECHNOLOGY_SELECTION.md` §7/§8/§9.
+
+---
+
+## ADR-009 — Registry-authoritative risk, fixed gate order, fail-closed audit
+
+**Status:** Proposed (awaiting owner acceptance)
+**Date:** 2026-10-21
+
+**Context**
+The next step is an LLM-backed planner (ADR-005). Until now each `Step.risk` was set by the
+planner alone, so a planner that is wrong, or an LLM that is manipulated, could label a risky
+tool `LOW` and skip approval. Approval (FEAT-6) and audit (FEAT-11) also had to be ordered so
+that no action can run unapproved or unrecorded.
+
+**Decision**
+- A tool's declared risk in the Tool Registry is the authority. Effective risk =
+  `max(planner risk, tool risk)`: a planner can raise risk, never lower it. An unknown tool or
+  an unrecognised risk label is `BLOCK`.
+- Every tool declares an input schema (small JSON-schema subset). Unknown parameters are
+  rejected. `Tool.run` validates every call, and the pipeline validates before asking for approval.
+- Gate order is fixed: Policy → Input check → Approval → (Audit "step_execute") → Execute →
+  Verify. Any `BLOCK` stops the task before anyone is asked. One denial stops the task.
+  Execution stops at the first failed or unverified step.
+- The audit log is fail-closed: if the pre-execution record cannot be written, the tool does not run.
+  Secret-looking keys are redacted and long strings truncated before anything is written.
+- The default approver denies. The CLI asks only when a terminal is attached, and only an
+  explicit "y"/"yes" approves.
+
+**Alternatives considered**
+- Trust the planner's risk label: rejected. It does not survive an LLM planner.
+- Run all steps even after one fails (previous behaviour): rejected. Later steps usually depend
+  on earlier ones.
+- Best-effort audit (log errors, keep running): rejected because it allows unaudited actions.
+
+**Consequences**
+- **Positive:** the LLM planner can be added without widening what can run unapproved.
+- **Negative:** the `Pipeline` constructor now requires the `registry`. A full disk or a locked
+  log file stops the agent; this is intended.
+
+**References**
+- `security/policy/policy.py`, `tools/registry.py`, `security/approvals/approver.py`,
+  `security/audit/log.py`, `core/pipeline.py`, `tests/security/test_safety_gates.py`.
 
 ---
 

@@ -19,6 +19,18 @@ class MockBrain(Brain):
         description = task.description.strip()
         lower = description.lower()
 
+        # "guarded echo <msg>": same as echo, but routed to a MEDIUM-risk demo tool so
+        # the approval gate (FEAT-6) can be tried by hand. Checked before "echo ".
+        if lower.startswith("guarded echo "):
+            message = description[len("guarded echo ") :].strip()
+            if not message:
+                task.state = TaskState.FAILED
+                task.error = "guarded echo command requires a message."
+                return
+            task.intent = {"action": "guarded_echo", "message": message}
+            task.state = TaskState.PLANNED
+            return
+
         if lower.startswith("echo "):
             message = description[len("echo ") :].strip()
             if not message:
@@ -31,6 +43,7 @@ class MockBrain(Brain):
 
         task.state = TaskState.FAILED
         task.error = (
-            f"Unsupported task (MVP mock brain knows only 'echo <message>'). "
+            f"Unsupported task (MVP mock brain knows only 'echo <message>' and "
+            f"'guarded echo <message>'). "
             f"Got: {description!r}"
         )

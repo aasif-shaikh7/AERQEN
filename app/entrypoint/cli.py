@@ -3,15 +3,18 @@
 Run from the repo root:
 
     python -m app.entrypoint.cli "echo hello aerqen"
+    python -m app.entrypoint.cli "guarded echo hello"   # asks for approval (y/N)
 
-This builds the pipeline with the mock brain and demo tool, runs one task, and prints
-a small report. No real computer control, filesystem mutation, or external service
-is used, so it is safe to test as-is.
+This builds the pipeline with the mock brain and demo tools, runs one task, and prints
+a small report. Decisions and actions are appended to ``data/logs/audit.jsonl``
+(secrets redacted). No real computer control or external service is used, so it is
+safe to test as-is. If no one is at the terminal, approvals are denied automatically.
 """
 
 from __future__ import annotations
 
 import sys
+import uuid
 
 if __package__ in (None, ""):
     # Allow running as ``python app/entrypoint/cli.py`` from the repo root.
@@ -23,12 +26,18 @@ from core.pipeline import Pipeline
 from core.planner.naive import NaivePlanner
 from core.task_manager.models import Task
 from core.verifier.checker import ContractVerifier
+from security.approvals.approver import Approver, CliApprover, DenyAllApprover
+from security.audit.log import AuditLog, JsonlAuditLog
 from security.policy.policy import PolicyEngine
 from tools.demo import build_demo_tools
 from tools.registry import ToolRegistry
 
 
-def build_pipeline() -> Pipeline:
+def build_pipeline(
+    approver: Approver | None = None,
+    audit: AuditLog | None = None,
+) -> Pipeline:
+    """Build the pipeline. Defaults are the safe ones: deny approvals, audit in memory."""
     registry = ToolRegistry()
     build_demo_tools(registry)
 
@@ -38,6 +47,9 @@ def build_pipeline() -> Pipeline:
         policy=PolicyEngine(),
         executor=SimpleExecutor(registry),
         verifier=ContractVerifier(),
+        registry=registry,
+        approver=approver,
+        audit=audit,
     )
 
 
@@ -51,7 +63,12 @@ def render_report(task: Task) -> str:
     if task.intent:
         lines.append(f"  intent    : {task.intent}")
     for step in task.plan:
-        lines.append(f"  step      : {step.tool} -> {step.state.value}")
+        lines.append(
+            f"  step      : {step.tool} (risk {step.risk}, {step.decision.value}) "
+            f"-> {step.state.value}"
+        )
+        if step.approval:
+            lines.append(f"    approval: {step.approval}")
         if step.outcome:
             lines.append(f"    outcome : {step.outcome}")
         if step.result is not None:
@@ -67,8 +84,11 @@ def main(argv: list[str] | None = None) -> int:
         print(__doc__)
         return 2
 
-    pipeline = build_pipeline()
-    task = Task(task_id="mvp-1", description=" ".join(argv))
+    # Only ask a human when one can actually answer at this terminal.
+    approver = CliApprover() if sys.stdin.isatty() else DenyAllApprover()
+    pipeline = build_pipeline(approver=approver, audit=JsonlAuditLog())
+    # Unique id per run so separate runs can be told apart in the audit log.
+    task = Task(task_id=f"task-{uuid.uuid4().hex[:8]}", description=" ".join(argv))
     pipeline.run(task)
     print(render_report(task))
     return 0 if task.state.value in ("done", "blocked") else 1

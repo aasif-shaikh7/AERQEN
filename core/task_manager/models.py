@@ -61,6 +61,12 @@ class Step:
     # Confidence/evidence from the verifier (Measured/Reasoned/... per GLOSSARY).
     outcome: Optional[str] = None
 
+    # Why the policy decided what it did, when it is not obvious (e.g. risk raised).
+    policy_reason: Optional[str] = None
+
+    # How a non-automatic step was cleared: "user" (approved) / "denied", or None.
+    approval: Optional[str] = None
+
 
 @dataclass
 class Task:
