@@ -194,7 +194,10 @@ On the dev machine (host(, per owner coordination:
 - **Tools (all LOW):** `memory.remember`, `memory.recall`, `memory.list` (`tools/memory.py`).
 - **Auto-recall:** the agent loop injects the most relevant saved notes (keyword match, newest
   first, `AERQEN_MEMORY_RECALL` default 5) into the prompt as its own notes / data — never as
-  instructions — at the start of each task. Memory failures never break a task.
+  instructions — at the start of each task. If the wording/language keyword-matches nothing, it
+  falls back to the most recent notes, so memory works regardless of how the user phrases the
+  question. The system prompt also tells the agent to save user facts and use recalled notes.
+  Memory failures never break a task.
 - **Tests:** +15 (store behaviour, tools, and two agent auto-recall tests). `pytest -m "not live"`
   -> **75 passed**.
 - **Evidence (Measured, 2026-10-21, qwen2.5:7b):** run 1 saved "my favourite colour is blue" via

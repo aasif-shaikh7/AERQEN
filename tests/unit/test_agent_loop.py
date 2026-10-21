@@ -227,6 +227,28 @@ def test_memory_is_recalled_into_the_prompt(tmp_path):
     assert "agent_memory_recall" in audit.names()
 
 
+def test_memory_fallback_to_recent_when_query_does_not_match(tmp_path):
+    # Even if the question shares no keywords with the note (e.g. another language),
+    # the agent should still receive its recent notes as context.
+    from core.memory.store import MemoryStore
+
+    mem = MemoryStore(tmp_path / "mem.jsonl")
+    mem.remember("my favourite colour is blue")
+
+    registry = ToolRegistry()
+    verifier = ContractVerifier()
+    build_file_tools(registry, tmp_path, verifier=verifier)
+    runner = StepRunner(registry, PolicyEngine(), SimpleExecutor(registry), verifier,
+                        DenyAllApprover(), MemoryAuditLog())
+    provider = FakeProvider([LLMReply(content="blue")])
+    agent = AgentLoop(provider=provider, runner=runner, memory=mem, memory_recall=5)
+
+    task = Task(task_id="t-hi", description="mera pasandida rang kaunsa hai")  # no shared words
+    agent.run(task)
+    system_msgs = [m for m in provider.calls[0][0] if m["role"] == "system"]
+    assert any("blue" in m["content"] for m in system_msgs)  # recent-notes fallback kicked in
+
+
 def test_no_memory_means_no_recall_block(tmp_path):
     # Agent without a memory store must still work and inject no recall block.
     agent, provider, audit, _ = _build_agent(tmp_path, [LLMReply(content="ok")])
