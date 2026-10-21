@@ -39,6 +39,7 @@ data/logs/*
 data/runtime/*
 data/test/*
 data/workspace/*
+data/memory/*
 !data/**/.gitkeep
 *.log
 logs/

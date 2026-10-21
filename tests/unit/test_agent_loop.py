@@ -203,6 +203,40 @@ def test_high_risk_tool_is_blocked(tmp_path):
     assert "step_execute" not in audit.names()
 
 
+def test_memory_is_recalled_into_the_prompt(tmp_path):
+    from core.memory.store import MemoryStore
+
+    mem = MemoryStore(tmp_path / "mem.jsonl")
+    mem.remember("the user's name is Aasif", tags="profile")
+
+    registry = ToolRegistry()
+    verifier = ContractVerifier()
+    build_file_tools(registry, tmp_path, verifier=verifier)
+    audit = MemoryAuditLog()
+    runner = StepRunner(registry, PolicyEngine(), SimpleExecutor(registry), verifier,
+                        DenyAllApprover(), audit)
+    provider = FakeProvider([LLMReply(content="Hi Aasif!")])
+    agent = AgentLoop(provider=provider, runner=runner, memory=mem, memory_recall=5)
+
+    task = Task(task_id="t-mem", description="who is the user named Aasif?")
+    agent.run(task)
+
+    # The saved note was injected as a system context message before the model ran.
+    system_msgs = [m for m in provider.calls[0][0] if m["role"] == "system"]
+    assert any("Aasif" in m["content"] for m in system_msgs)
+    assert "agent_memory_recall" in audit.names()
+
+
+def test_no_memory_means_no_recall_block(tmp_path):
+    # Agent without a memory store must still work and inject no recall block.
+    agent, provider, audit, _ = _build_agent(tmp_path, [LLMReply(content="ok")])
+    task = Task(task_id="t-nomem", description="hello")
+    agent.run(task)
+    system_msgs = [m for m in provider.calls[0][0] if m["role"] == "system"]
+    assert len(system_msgs) == 1  # only the base system prompt
+    assert "agent_memory_recall" not in audit.names()
+
+
 def test_llm_unavailable_fails_cleanly(tmp_path):
     registry = ToolRegistry()
     verifier = ContractVerifier()

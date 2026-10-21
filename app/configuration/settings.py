@@ -62,6 +62,13 @@ class Settings:
     max_steps: int = field(default_factory=lambda: _int_env("AERQEN_MAX_STEPS", 8))
     llm_timeout: float = field(default_factory=lambda: _float_env("AERQEN_LLM_TIMEOUT", 120.0))
 
+    # Agent memory (ADR-012): a small durable notebook the agent reads/writes across runs.
+    memory_path: str = field(
+        default_factory=lambda: os.getenv("AERQEN_MEMORY", "data/memory/memory.jsonl")
+    )
+    memory_max: int = field(default_factory=lambda: _int_env("AERQEN_MEMORY_MAX", 200))
+    memory_recall: int = field(default_factory=lambda: _int_env("AERQEN_MEMORY_RECALL", 5))
+
 
 def load_settings() -> Settings:
     return Settings()
