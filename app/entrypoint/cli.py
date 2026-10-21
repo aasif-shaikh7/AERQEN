@@ -97,6 +97,8 @@ def build_agent(
         max_steps=settings.max_steps,
         memory=memory,
         memory_recall=settings.memory_recall,
+        llm_retries=settings.llm_retries,
+        max_consecutive_failures=settings.max_consecutive_failures,
     )
 
 

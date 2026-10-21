@@ -189,11 +189,13 @@ class _Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
+        # Always drain the request body first, even if we are about to refuse: replying
+        # without reading the body aborts the connection on the client (WinError 10053).
+        data = self._read_json()
         if not self._ok_token():
             self._json(403, {"error": "bad or missing token"})
             return
         path = urlparse(self.path).path
-        data = self._read_json()
         if path == "/api/ask":
             message = str(data.get("message", "")).strip()
             if not message:

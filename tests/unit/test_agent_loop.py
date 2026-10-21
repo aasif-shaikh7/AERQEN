@@ -16,7 +16,7 @@ from core.executor.simple import SimpleExecutor
 from core.runner import StepRunner
 from core.task_manager.models import Task, TaskState
 from core.verifier.checker import ContractVerifier
-from integrations.ai.provider import LLMProvider, LLMReply, ToolCall
+from integrations.ai.provider import LLMError, LLMProvider, LLMReply, ToolCall
 from security.approvals.approver import Approver, DenyAllApprover
 from security.audit.log import MemoryAuditLog
 from security.policy.policy import PolicyEngine
@@ -48,6 +48,47 @@ class FakeProvider(LLMProvider):
 class AllowApprover(Approver):
     def approve(self, step) -> bool:
         return True
+
+
+class FlakyProvider(LLMProvider):
+    """Raises LLMError for the first ``fail_times`` calls, then returns ``then``."""
+
+    name = "flaky"
+
+    def __init__(self, fail_times: int, then: LLMReply) -> None:
+        self.fail_times = fail_times
+        self.then = then
+        self.calls = 0
+
+    def chat(self, messages, tools) -> LLMReply:
+        self.calls += 1
+        if self.calls <= self.fail_times:
+            raise LLMError("transient blip")
+        return self.then
+
+
+class AlwaysProvider(LLMProvider):
+    """Returns the same reply on every call (to force a failure loop)."""
+
+    name = "always"
+
+    def __init__(self, reply: LLMReply) -> None:
+        self.reply = reply
+        self.calls = 0
+
+    def chat(self, messages, tools) -> LLMReply:
+        self.calls += 1
+        return self.reply
+
+
+def _bare_agent(tmp_path, provider, **kw):
+    registry = ToolRegistry()
+    verifier = ContractVerifier()
+    build_file_tools(registry, tmp_path, verifier=verifier)
+    audit = MemoryAuditLog()
+    runner = StepRunner(registry, PolicyEngine(), SimpleExecutor(registry), verifier,
+                        AllowApprover(), audit)
+    return AgentLoop(provider=provider, runner=runner, **kw), audit
 
 
 def _call(model_tool: str, **args) -> LLMReply:
@@ -257,6 +298,56 @@ def test_no_memory_means_no_recall_block(tmp_path):
     system_msgs = [m for m in provider.calls[0][0] if m["role"] == "system"]
     assert len(system_msgs) == 1  # only the base system prompt
     assert "agent_memory_recall" not in audit.names()
+
+
+def test_llm_retry_recovers_from_transient_blip(tmp_path):
+    provider = FlakyProvider(fail_times=1, then=LLMReply(content="recovered"))
+    agent, audit = _bare_agent(tmp_path, provider, llm_retries=2)
+    task = Task(task_id="t-retry", description="hi")
+    agent.run(task)
+    assert task.state is TaskState.DONE
+    assert task.answer == "recovered"
+    assert provider.calls == 2  # failed once, succeeded on the retry
+    assert "llm_retry" in audit.names()
+
+
+def test_llm_retry_gives_up_after_exhausting(tmp_path):
+    provider = FlakyProvider(fail_times=9, then=LLMReply(content="never"))
+    agent, audit = _bare_agent(tmp_path, provider, llm_retries=1)  # 2 tries total
+    task = Task(task_id="t-exhaust", description="hi")
+    agent.run(task)
+    assert task.state is TaskState.FAILED
+    assert "after 2 tries" in (task.error or "")
+    assert provider.calls == 2
+
+
+def test_gives_up_after_consecutive_failures(tmp_path):
+    # The model keeps calling a tool that does not exist; recovery stops the loop early.
+    provider = AlwaysProvider(_call("does_not_exist"))
+    agent, audit = _bare_agent(tmp_path, provider, max_steps=8, max_consecutive_failures=3)
+    task = Task(task_id="t-giveup", description="do the impossible")
+    agent.run(task)
+    assert task.state is TaskState.FAILED
+    assert "Gave up after 3" in (task.error or "")
+    assert provider.calls == 3  # stopped well before the step budget of 8
+    assert "agent_gave_up" in audit.names()
+
+
+def test_failure_streak_resets_on_success(tmp_path):
+    # bad input (fail) -> valid list (success, resets) -> bad input (fail) -> final answer.
+    (tmp_path / "x.txt").write_text("hi", encoding="utf-8")
+    provider = FakeProvider([
+        _call("files_read_text"),               # missing 'path' -> failure 1
+        _call("files_list", path="."),          # success -> streak resets
+        _call("files_read_text"),               # missing 'path' -> failure 1 again
+        LLMReply(content="done anyway"),
+    ])
+    agent, audit = _bare_agent(tmp_path, provider, max_consecutive_failures=2)
+    task = Task(task_id="t-reset", description="poke around")
+    agent.run(task)
+    # Without the reset, two failures would have tripped give-up; instead it finishes.
+    assert task.state is TaskState.DONE
+    assert task.answer == "done anyway"
 
 
 def test_llm_unavailable_fails_cleanly(tmp_path):

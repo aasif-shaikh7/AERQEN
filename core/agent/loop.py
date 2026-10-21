@@ -26,6 +26,7 @@ Hard limits that do not depend on the model behaving:
 from __future__ import annotations
 
 import json
+import time
 from typing import Any, Optional
 
 from core.runner import StepRunner
@@ -66,6 +67,8 @@ class AgentLoop:
         system_prompt: str = _SYSTEM_PROMPT,
         memory=None,
         memory_recall: int = 5,
+        llm_retries: int = 2,
+        max_consecutive_failures: int = 3,
     ) -> None:
         self.provider = provider
         self.runner = runner
@@ -75,6 +78,10 @@ class AgentLoop:
         # at the start of a task so the agent does not start every run from scratch.
         self.memory = memory
         self.memory_recall = max(0, int(memory_recall))
+        # Recovery (ADR-014): retry transient model blips, and give up after too many
+        # consecutive failures instead of burning the whole step budget in a loop.
+        self.llm_retries = max(0, int(llm_retries))
+        self.max_consecutive_failures = max(1, int(max_consecutive_failures))
 
         # Build the tool list shown to the model, plus a map back to registry names.
         self._tools: list[dict[str, Any]] = []
@@ -113,12 +120,13 @@ class AgentLoop:
         task.state = TaskState.EXECUTING
 
         step_no = 0
+        failures = 0  # consecutive failed steps (bad tool name / bad input / tool error)
         while step_no < self.max_steps:
             try:
-                reply = self.provider.chat(messages, self._tools)
+                reply = self._chat_with_retry(messages, task)
             except LLMError as exc:
                 task.state = TaskState.FAILED
-                task.error = f"LLM call failed: {exc}"
+                task.error = f"LLM call failed after {self.llm_retries + 1} tries: {exc}"
                 return self._finish(task)
 
             # No tool call -> the model is done and this is its final answer.
@@ -150,6 +158,9 @@ class AgentLoop:
                     "error": f"unknown tool {call.name!r}",
                     "available_tools": sorted(self._model_to_registry),
                 })
+                failures += 1
+                if self._gave_up(task, failures, f"unknown tool {call.name!r}", audit):
+                    return self._finish(task)
                 continue
 
             declared = self.runner.registry.get(registry_name).risk
@@ -173,6 +184,9 @@ class AgentLoop:
             input_error = self.runner.check_input(step)
             if input_error is not None:
                 self._feed(messages, call.name, {"error": input_error})
+                failures += 1
+                if self._gave_up(task, failures, input_error, audit):
+                    return self._finish(task)
                 continue
 
             # 3. Approval for CONFIRM steps. A denial is a hard stop.
@@ -185,12 +199,14 @@ class AgentLoop:
             # 4. Execute + verify. Success or failure, the model sees the outcome.
             ok = self.runner.execute(task, step)
             if ok:
+                failures = 0  # recovery: a success clears the failure streak
                 self._feed(messages, call.name, {"result": step.result, "verified": step.outcome})
             else:
-                self._feed(messages, call.name, {
-                    "error": step.error or step.outcome or "tool failed",
-                    "verified": step.outcome,
-                })
+                last_error = step.error or step.outcome or "tool failed"
+                self._feed(messages, call.name, {"error": last_error, "verified": step.outcome})
+                failures += 1
+                if self._gave_up(task, failures, last_error, audit):
+                    return self._finish(task)
 
         # Ran out of the step budget without a final answer.
         task.state = TaskState.FAILED
@@ -199,6 +215,37 @@ class AgentLoop:
         return self._finish(task)
 
     # ----------------------------------------------------------------- helpers
+
+    def _chat_with_retry(self, messages: list[dict[str, Any]], task: Task):
+        """Call the model, retrying transient failures a few times (ADR-014)."""
+        last_exc: Optional[LLMError] = None
+        for attempt in range(self.llm_retries + 1):
+            try:
+                return self.provider.chat(messages, self._tools)
+            except LLMError as exc:
+                last_exc = exc
+                if attempt < self.llm_retries:
+                    self.runner.audit.record(
+                        "llm_retry",
+                        task_id=task.task_id,
+                        attempt=attempt + 1,
+                        error=str(exc),
+                    )
+                    time.sleep(0.5 * (attempt + 1))  # brief backoff
+        raise last_exc  # exhausted retries; caller marks the task failed
+
+    def _gave_up(self, task: Task, failures: int, last_error: str, audit) -> bool:
+        """Stop a pointless failure loop once too many steps fail in a row (ADR-014)."""
+        if failures < self.max_consecutive_failures:
+            return False
+        task.state = TaskState.FAILED
+        task.error = (
+            f"Gave up after {failures} failed attempts in a row. Last problem: {last_error}"
+        )
+        audit.record(
+            "agent_gave_up", task_id=task.task_id, failures=failures, last_error=last_error
+        )
+        return True
 
     def _recall_notes(self, task: Task) -> str:
         """Fetch relevant saved notes for this task as a labelled context block, or ""."""

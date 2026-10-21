@@ -62,6 +62,12 @@ class Settings:
     max_steps: int = field(default_factory=lambda: _int_env("AERQEN_MAX_STEPS", 8))
     llm_timeout: float = field(default_factory=lambda: _float_env("AERQEN_LLM_TIMEOUT", 120.0))
 
+    # Recovery (ADR-014): survive transient model blips, and stop pointless failure loops.
+    llm_retries: int = field(default_factory=lambda: _int_env("AERQEN_LLM_RETRIES", 2))
+    max_consecutive_failures: int = field(
+        default_factory=lambda: _int_env("AERQEN_MAX_CONSECUTIVE_FAILURES", 3)
+    )
+
     # Agent memory (ADR-012): a small durable notebook the agent reads/writes across runs.
     memory_path: str = field(
         default_factory=lambda: os.getenv("AERQEN_MEMORY", "data/memory/memory.jsonl")

@@ -219,6 +219,20 @@ On the dev machine (host(, per owner coordination:
   "Your favourite colour is blue"; "create webtest.txt ..." paused for approval, Allow was
   tapped, and the file was created.
 
+### Phase 2 — recovery (2026-10-21; owner acceptance pending)
+
+- **Retry transient model calls (ADR-014, proposed):** the agent loop retries the model up to
+  `AERQEN_LLM_RETRIES` (default 2) times on `LLMError` with a short backoff (audited as
+  `llm_retry`), so a brief Ollama/network blip no longer kills the task.
+- **Failure-loop guard:** consecutive failed steps (unknown tool, schema error, tool error) are
+  counted; a success resets the count; reaching `AERQEN_MAX_CONSECUTIVE_FAILURES` (default 3)
+  ends the task with "Gave up after N failed attempts … Last problem: …" and an `agent_gave_up`
+  event — instead of burning the whole step budget. BLOCK/denial remain immediate hard stops.
+- **Tests:** +4 (retry recovers, retry exhausts, give-up after consecutive failures, streak
+  resets on success). `pytest -m "not live"` -> **87 passed**.
+- Also fixed a web-server gotcha: the POST handler now drains the request body before a 403,
+  avoiding a dropped-connection error on a bad token.
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.
