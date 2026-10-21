@@ -69,6 +69,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-010` | LLM agent loop shares the safety gates; one tool per turn; untrusted output; sandboxed create-only file tools | Accepted |
 | `ADR-011` | Workspace mutation + search tools; destructive actions are recoverable via `.trash`; exact-byte writes | Accepted |
 | `ADR-012` | Durable agent memory: a small bounded JSONL notebook; LOW-risk tools; auto-recall into the prompt | Proposed |
+| `ADR-013` | Local web chat UI (stdlib HTTP); token-gated LAN access; web Allow/Deny approvals | Proposed |
 
 ---
 
@@ -452,6 +453,56 @@ way to leak secrets or grow without bound.
 - `core/memory/store.py`, `tools/memory.py`, `core/agent/loop.py`,
   `app/configuration/settings.py`, `app/entrypoint/cli.py`,
   `tests/unit/test_memory.py`, `tests/unit/test_agent_loop.py`.
+
+---
+
+## ADR-013 — Local web chat UI
+
+**Status:** Proposed (awaiting owner acceptance)
+**Date:** 2026-10-21
+
+**Context**
+The owner is not a programmer and should not have to use the terminal for every task, and
+wants to use AERQEN from both the PC and a phone. A graphical chat that works in any
+browser, on the same home WiFi, meets that — but it must not weaken the safety gates, and
+it must not expose a tool that controls the computer to anything on the network.
+
+**Decision**
+- A tiny HTTP server (`app/web/server.py`) built on `http.server.ThreadingHTTPServer`,
+  **standard library only** (consistent with the no-dependency rule). It serves a single
+  self-contained, mobile-first chat page and a small JSON API (`/api/ask`, `/api/poll`,
+  `/api/approve`).
+- The gate logic is unchanged. `app/web/service.AgentService` runs each message as a
+  background task through the same `AgentLoop`/`StepRunner`. Approvals use a `WebApprover`
+  that blocks the task until the UI sends Allow/Deny — the same human-in-the-loop gate as
+  the CLI, now a tap on the phone/PC.
+- The server binds to the LAN (`0.0.0.0`) so a phone can reach it, so every API request
+  requires a **token** (`compare_digest`), printed inside the link and auto-generated if
+  `AERQEN_WEB_TOKEN` is unset. Without the token, requests are refused — other devices on
+  the WiFi cannot drive the agent.
+- `build_agent` is injected into `AgentService`, so the web layer adds no new agent logic
+  and is testable with a fake model.
+
+**Alternatives considered**
+- A desktop GUI (Tk/Qt) or a packaged app: rejected — a browser page works on PC and phone
+  with zero install and no new dependency.
+- A cloud-hosted service: rejected — against the all-local decision (ADR-006) and would send
+  the user's data off the machine.
+- Auto-approving MEDIUM steps so the UI never blocks: rejected — it would silently remove the
+  approval gate. Approvals stay, as a tap.
+- No token (open on the LAN): rejected — anything on the WiFi could then run tools.
+
+**Consequences**
+- **Positive:** the owner can use AERQEN like a chat app from the PC or phone, with approvals
+  and audit fully intact. Verified end to end over HTTP against the real model (memory recall
+  answered, and a write paused for an Allow tap then created the file).
+- **Negative:** binding to the LAN means the PC firewall may prompt to allow Python the first
+  time; the token lives in the URL (fine for a home network, not a hostile one); there is no
+  multi-user accounts/HTTPS yet (local single-owner tool).
+
+**References**
+- `app/web/server.py`, `app/web/service.py`, `app/configuration/settings.py`, `chat.bat`,
+  `tests/unit/test_web.py`.
 
 ---
 

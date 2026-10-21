@@ -204,6 +204,21 @@ On the dev machine (host(, per owner coordination:
   `memory.remember`; a separate run 2 (new agent, same file) auto-recalled it and answered
   "your favourite colour is blue".
 
+### Phase 2 — local web chat UI (2026-10-21; owner acceptance pending)
+
+- **Browser chat (ADR-013, proposed):** `app/web/server.py` is a stdlib-only HTTP server that
+  serves a single mobile-first chat page and a small JSON API. `app/web/service.py`
+  (`AgentService`) runs each message through the same `AgentLoop`/`StepRunner`.
+- **Works on PC and phone:** binds to the LAN so a phone on the same WiFi can open it; the
+  server prints a link for the PC and one for the phone. `chat.bat` starts it with one click.
+- **Safety intact:** MEDIUM steps pause for an Allow/Deny tap in the UI (`WebApprover`), and a
+  per-session **token** (in the link) stops other devices on the network from driving the agent.
+- **Tests:** +7 (service approval flow + a real HTTP round-trip with a fake model).
+  `pytest -m "not live"` -> **83 passed**.
+- **Evidence (Measured, 2026-10-21, qwen2.5:7b):** over HTTP, "what is my favourite colour" ->
+  "Your favourite colour is blue"; "create webtest.txt ..." paused for approval, Allow was
+  tapped, and the file was created.
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.
