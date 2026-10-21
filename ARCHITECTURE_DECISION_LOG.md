@@ -67,7 +67,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-008` | Tool registry + policy + audit; hybrid testing; skeleton MVP | Accepted |
 | `ADR-009` | Tool's declared risk is authoritative; fixed safety-gate order; fail-closed audit | Accepted |
 | `ADR-010` | LLM agent loop shares the safety gates; one tool per turn; untrusted output; sandboxed create-only file tools | Accepted |
-| `ADR-011` | Workspace mutation + search tools; destructive actions are recoverable via `.trash`; exact-byte writes | Proposed |
+| `ADR-011` | Workspace mutation + search tools; destructive actions are recoverable via `.trash`; exact-byte writes | Accepted |
 
 ---
 
@@ -361,7 +361,7 @@ which nothing in Phase 1 did.
 
 ## ADR-011 — Workspace mutation + search tools, recoverable by design
 
-**Status:** Proposed (awaiting owner acceptance)
+**Status:** Accepted (owner accepted 2026-10-21)
 **Date:** 2026-10-21
 
 **Context**
