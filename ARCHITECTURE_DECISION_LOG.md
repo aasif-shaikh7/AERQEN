@@ -71,6 +71,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-012` | Durable agent memory: a small bounded JSONL notebook; LOW-risk tools; auto-recall into the prompt | Proposed |
 | `ADR-013` | Local web chat UI (stdlib HTTP); token-gated LAN access; web Allow/Deny approvals | Proposed |
 | `ADR-014` | Recovery: retry transient model calls; stop after N consecutive failures; clear give-up message | Proposed |
+| `ADR-015` | Web tools: search (LOW) + fetch (MEDIUM, SSRF-guarded); stdlib only; output stays untrusted | Proposed |
 
 ---
 
@@ -551,6 +552,55 @@ pointlessly.
 **References**
 - `core/agent/loop.py` (`_chat_with_retry`, `_gave_up`), `app/configuration/settings.py`,
   `app/entrypoint/cli.py`, `tests/unit/test_agent_loop.py`.
+
+---
+
+## ADR-015 — Web tools: search and fetch, guarded
+
+**Status:** Proposed (awaiting owner acceptance)
+**Date:** 2026-10-21
+
+**Context**
+The owner asked for web search so the agent can answer from the internet, not just its
+training. Reaching the network is the biggest new risk surface so far: server-side request
+forgery (being steered to the owner's own machine / LAN / cloud metadata), prompt injection
+from page content, and flooding the model with a huge page.
+
+**Decision**
+- Two tools, standard library only (`tools/web.py`): `web.search` (**LOW**) queries DuckDuckGo
+  and returns a list of `{title, url}`; `web.fetch` (**MEDIUM**, approval) downloads ONE page
+  and returns its text.
+- `web.search` is LOW because it only hits a fixed search endpoint with the user's query and
+  returns links — no arbitrary destination. `web.fetch` is MEDIUM because it goes to an
+  arbitrary URL, so the owner approves it (a tap in the UI).
+- **SSRF guard** on fetch: the URL must be http/https and must resolve to a PUBLIC address;
+  localhost, loopback, private ranges (10/8, 172.16/12, 192.168/16), link-local (incl.
+  169.254.169.254 cloud metadata), reserved, multicast and unspecified are refused.
+- Downloads are byte-capped, HTML is reduced to text and length-capped. Results re-enter the
+  prompt with the standard UNTRUSTED label, so a page cannot instruct the agent.
+- Web tools can be turned off entirely (`AERQEN_WEB_TOOLS=0`) for a fully offline setup;
+  `AERQEN_HTTP_TIMEOUT` bounds each request.
+
+**Alternatives considered**
+- A paid search API (Brave/Serper/Google CSE): rejected for v1 — needs a key and an account;
+  DuckDuckGo needs neither and keeps the install zero-config. (An API provider can be added
+  later behind the same tool.)
+- Making `web.fetch` LOW (no approval): rejected — fetching an arbitrary URL is exactly the
+  action that deserves a human tap, even with the SSRF guard.
+- Letting the model browse many pages per turn: out of scope; one page per `web.fetch`, each
+  gated and audited, same as every other tool.
+
+**Consequences**
+- **Positive:** the agent can research and answer from the live web (verified: it searched and
+  answered "the tallest mountain is Mount Everest, 8,848 m"), with SSRF blocked and approvals
+  intact.
+- **Negative:** DuckDuckGo's HTML is scraped, so a markup change could break `web.search` until
+  the parser is updated (it degrades to zero results, never a crash); text extraction is plain
+  (no JavaScript-rendered pages); no allow/deny domain list yet.
+
+**References**
+- `tools/web.py`, `app/configuration/settings.py`, `app/entrypoint/cli.py`,
+  `tests/unit/test_web_tools.py`.
 
 ---
 

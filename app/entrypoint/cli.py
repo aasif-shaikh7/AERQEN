@@ -40,6 +40,7 @@ from security.policy.policy import PolicyEngine
 from tools.demo import build_demo_tools
 from tools.files import build_file_tools
 from tools.memory import build_memory_tools
+from tools.web import build_web_tools
 from tools.registry import ToolRegistry
 
 
@@ -77,6 +78,9 @@ def build_agent(
     # Memory tools + a durable store the agent can read across runs (ADR-012).
     memory = MemoryStore(settings.memory_path, max_entries=settings.memory_max)
     build_memory_tools(registry, memory, verifier=verifier)
+    # Web tools (ADR-015): search (LOW) + fetch (MEDIUM, SSRF-guarded). Optional.
+    if settings.web_tools:
+        build_web_tools(registry, timeout=settings.http_timeout, verifier=verifier)
 
     runner = StepRunner(
         registry=registry,

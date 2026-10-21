@@ -51,7 +51,7 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`..`CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed); `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — safety-gate foundation (owner accepted 2026-10-21); `LLM-1` (agent loop + Ollama) and `FEAT-13` (sandboxed file tools) — owner accepted 2026-10-21. See `done-list.md`. |
-| `testing` | `FEAT-17` agent memory (ADR-012); `UI-1` local web chat (ADR-013); `FEAT-10` recovery (ADR-014): LLM retry + consecutive-failure guard — 87 tests pass + live demos (2026-10-21), owner acceptance pending |
+| `testing` | `FEAT-17` memory (ADR-012); `UI-1` web chat (ADR-013); `FEAT-10` recovery (ADR-014); `FEAT-14w` web search/fetch (ADR-015): SSRF-guarded, search LOW / fetch MEDIUM — 103 tests pass + live web demo (2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
 | `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |
@@ -429,9 +429,11 @@ was `blocked` when no one approved.
 
 ## `FEAT-14` — Browser agent
 
-**Phase:** `pending`
+**Phase:** `pending` (read-only web precursor `FEAT-14w` shipped, ADR-015)
 
-Add browser navigation and interaction with authentication, CAPTCHA, privacy, and data-transfer safeguards.
+Full interactive browser automation is still pending. A read-only precursor is in `testing`:
+`web.search` (LOW) and `web.fetch` (MEDIUM, SSRF-guarded) in `tools/web.py` let the agent
+research the internet. Full navigation/clicking/auth/CAPTCHA handling remains for this item.
 
 ---
 
