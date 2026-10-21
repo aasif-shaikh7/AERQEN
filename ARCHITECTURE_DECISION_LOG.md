@@ -70,6 +70,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-011` | Workspace mutation + search tools; destructive actions are recoverable via `.trash`; exact-byte writes | Accepted |
 | `ADR-012` | Durable agent memory: a small bounded JSONL notebook; LOW-risk tools; auto-recall into the prompt | Proposed |
 | `ADR-013` | Local web chat UI (stdlib HTTP); token-gated LAN access; web Allow/Deny approvals | Proposed |
+| `ADR-014` | Recovery: retry transient model calls; stop after N consecutive failures; clear give-up message | Proposed |
 
 ---
 
@@ -503,6 +504,53 @@ it must not expose a tool that controls the computer to anything on the network.
 **References**
 - `app/web/server.py`, `app/web/service.py`, `app/configuration/settings.py`, `chat.bat`,
   `tests/unit/test_web.py`.
+
+---
+
+## ADR-014 — Recovery: retries and a failure-loop guard
+
+**Status:** Proposed (awaiting owner acceptance)
+**Date:** 2026-10-21
+
+**Context**
+Two failure modes made the agent brittle: a single transient model/network blip (Ollama
+busy, a dropped socket) killed the whole task, and a confused model could keep making the
+same failing call until the step budget ran out — slow and unhelpful. The owner asked for
+recovery: the agent should not give up on the first hiccup, but also should not loop
+pointlessly.
+
+**Decision**
+- **Retry transient model calls.** `AgentLoop` wraps the provider call and retries up to
+  `AERQEN_LLM_RETRIES` (default 2) times on `LLMError`, with a short backoff, auditing each
+  `llm_retry`. Only after the retries are exhausted does the task fail, with a clear message.
+- **Stop a failure loop.** The loop counts *consecutive* failed steps (unknown tool name,
+  schema error, or tool error). A success resets the count. On reaching
+  `AERQEN_MAX_CONSECUTIVE_FAILURES` (default 3) the task ends FAILED with
+  "Gave up after N failed attempts … Last problem: …" and an `agent_gave_up` audit event,
+  instead of burning the whole step budget.
+- Individual tool failures are still fed back to the model so it can try a different
+  approach — recovery adds bounds around that, it does not replace it. BLOCK and denial
+  remain immediate hard stops (unchanged); they are decisions, not failures to retry.
+
+**Alternatives considered**
+- Auto-retry failed *tool* executions inside the loop: rejected for now — most tool failures
+  (missing file, bad path) will just fail again; letting the model choose a different action
+  is better. Retry is reserved for transient *transport* errors.
+- Unbounded retries / exponential backoff: rejected — a local tool should fail fast and tell
+  the owner, not hang.
+- No loop guard (rely on max_steps only): rejected — it wastes time and model calls on an
+  obviously stuck task.
+
+**Consequences**
+- **Positive:** a brief Ollama hiccup no longer loses the task; a stuck model stops quickly
+  with an honest explanation the UI can show.
+- **Negative:** retries add up to a few seconds of delay on a genuinely down model before the
+  task fails; the consecutive-failure limit could, in theory, stop a task that would have
+  recovered on the very next try (mitigated by resetting the count on any success).
+
+**References**
+- `core/agent/loop.py` (`_chat_with_retry`, `_gave_up`), `app/configuration/settings.py`,
+  `app/entrypoint/cli.py`, `tests/unit/test_agent_loop.py`.
 
 ---
 

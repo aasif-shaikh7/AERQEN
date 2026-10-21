@@ -51,7 +51,7 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`..`CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed); `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — safety-gate foundation (owner accepted 2026-10-21); `LLM-1` (agent loop + Ollama) and `FEAT-13` (sandboxed file tools) — owner accepted 2026-10-21. See `done-list.md`. |
-| `testing` | `FEAT-17` agent memory (ADR-012): durable JSONL notebook + remember/recall/list tools + auto-recall; `UI-1` local web chat (ADR-013): browser chat for PC + phone, token-gated, web approvals — 83 tests pass + live HTTP demo (2026-10-21), owner acceptance pending |
+| `testing` | `FEAT-17` agent memory (ADR-012); `UI-1` local web chat (ADR-013); `FEAT-10` recovery (ADR-014): LLM retry + consecutive-failure guard — 87 tests pass + live demos (2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
 | `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |
@@ -356,9 +356,17 @@ Covered by unit tests.
 
 ## `FEAT-10` — Recovery engine
 
-**Phase:** `pending`
+**Phase:** `testing` (first version, ADR-014)
 
-Classify failures and perform bounded recovery attempts before safely stopping.
+First recovery shipped (ADR-014): the agent retries transient model calls
+(`AERQEN_LLM_RETRIES`) and stops a pointless failure loop after
+`AERQEN_MAX_CONSECUTIVE_FAILURES` consecutive failures with a clear message, instead of
+burning the whole step budget. Tool failures are still fed back so the model can try a
+different approach. Still pending for a later pass: richer failure classification, and
+auto-retry of specific transient tool errors.
+
+**Implemented:** `core/agent/loop.py` (`_chat_with_retry`, `_gave_up`), settings, tests in
+`tests/unit/test_agent_loop.py`.
 
 ---
 
