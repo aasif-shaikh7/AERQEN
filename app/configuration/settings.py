@@ -68,6 +68,13 @@ class Settings:
         default_factory=lambda: _int_env("AERQEN_MAX_CONSECUTIVE_FAILURES", 3)
     )
 
+    # Web tools (ADR-015): read from the internet. http_timeout bounds each request.
+    web_tools: bool = field(
+        default_factory=lambda: os.getenv("AERQEN_WEB_TOOLS", "1").strip().lower()
+        not in ("0", "false", "no", "off")
+    )
+    http_timeout: float = field(default_factory=lambda: _float_env("AERQEN_HTTP_TIMEOUT", 15.0))
+
     # Agent memory (ADR-012): a small durable notebook the agent reads/writes across runs.
     memory_path: str = field(
         default_factory=lambda: os.getenv("AERQEN_MEMORY", "data/memory/memory.jsonl")

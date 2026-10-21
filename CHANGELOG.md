@@ -233,6 +233,19 @@ On the dev machine (host(, per owner coordination:
 - Also fixed a web-server gotcha: the POST handler now drains the request body before a 403,
   avoiding a dropped-connection error on a bad token.
 
+### Phase 2 — web tools (2026-10-21; owner acceptance pending)
+
+- **Search + fetch (ADR-015, proposed):** `tools/web.py` adds `web.search` (LOW, DuckDuckGo ->
+  `{title, url}` list) and `web.fetch` (MEDIUM, approval -> one page's text). Standard library only.
+- **SSRF-guarded fetch:** only http/https URLs that resolve to a PUBLIC address; localhost,
+  loopback, private ranges, link-local (incl. 169.254.169.254) are refused. Downloads are
+  byte-capped, HTML reduced to text and length-capped; results stay labelled UNTRUSTED.
+- **Toggle/timeout:** `AERQEN_WEB_TOOLS=0` disables web entirely; `AERQEN_HTTP_TIMEOUT` bounds requests.
+- **Tests:** +11 (SSRF guard, DDG parsing, HTML->text, tool risks) and 2 live network tests.
+  `pytest -m "not live"` -> **103 passed**; live web tests -> **2 passed**.
+- **Evidence (Measured, 2026-10-21, qwen2.5:7b):** a live agent task searched the web and
+  answered "the tallest mountain on Earth is Mount Everest, 8,848 metres".
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.
