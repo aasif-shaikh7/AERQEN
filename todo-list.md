@@ -51,7 +51,7 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`..`CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed); `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — safety-gate foundation (owner accepted 2026-10-21); `LLM-1` (agent loop + Ollama) and `FEAT-13` (sandboxed file tools) — owner accepted 2026-10-21. See `done-list.md`. |
-| `testing` | — |
+| `testing` | `FEAT-17` agent memory (ADR-012): durable JSONL notebook + remember/recall/list tools + auto-recall — 75 tests pass + cross-run live demo (2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
 | `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |
@@ -445,9 +445,16 @@ Inspect projects, generate code, run tests, diagnose errors, and create controll
 
 ## `FEAT-17` — Memory
 
-**Phase:** `pending`
+**Phase:** `testing` (first version, ADR-012)
 
-Add user, project, and task memory with retention and privacy controls.
+First durable memory shipped (ADR-012): a bounded JSONL notebook (`core/memory/store.py`) plus
+`memory.remember` / `memory.recall` / `memory.list` tools (LOW), with auto-recall into the prompt
+at the start of each task. Retention is a size cap (oldest dropped). Still pending for a later
+pass: per-user/project scoping, secret redaction in notes, and smarter (embedding) recall.
+
+**Implemented:** `core/memory/store.py`, `tools/memory.py`, auto-recall in `core/agent/loop.py`,
+settings in `app/configuration/settings.py`, tests in `tests/unit/test_memory.py` and
+`tests/unit/test_agent_loop.py`.
 
 ---
 

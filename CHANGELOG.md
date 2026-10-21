@@ -185,6 +185,22 @@ On the dev machine (host(, per owner coordination:
   `files.write_text` → `files.append_text` → `files.read_text` and summarized the result;
   `shopping.txt` ended as `buy milk\nbuy eggs\n` (18 bytes), every mutating step sha256-verified.
 
+### Phase 2 — agent memory (2026-10-21; owner acceptance pending)
+
+- **Durable memory (ADR-012, proposed):** `core/memory/store.py` (`MemoryStore`) is a small
+  bounded JSONL notebook at `AERQEN_MEMORY` (default `data/memory/memory.jsonl`), separate from
+  the file workspace. Notes are length-capped and the store keeps only the newest
+  `AERQEN_MEMORY_MAX` (default 200); corrupt lines are skipped.
+- **Tools (all LOW):** `memory.remember`, `memory.recall`, `memory.list` (`tools/memory.py`).
+- **Auto-recall:** the agent loop injects the most relevant saved notes (keyword match, newest
+  first, `AERQEN_MEMORY_RECALL` default 5) into the prompt as its own notes / data — never as
+  instructions — at the start of each task. Memory failures never break a task.
+- **Tests:** +15 (store behaviour, tools, and two agent auto-recall tests). `pytest -m "not live"`
+  -> **75 passed**.
+- **Evidence (Measured, 2026-10-21, qwen2.5:7b):** run 1 saved "my favourite colour is blue" via
+  `memory.remember`; a separate run 2 (new agent, same file) auto-recalled it and answered
+  "your favourite colour is blue".
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.

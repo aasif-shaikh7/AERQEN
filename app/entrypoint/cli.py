@@ -25,6 +25,7 @@ if __package__ in (None, ""):
 
 from app.configuration.settings import Settings, load_settings
 from core.agent.loop import AgentLoop
+from core.memory.store import MemoryStore
 from core.brain.mock import MockBrain
 from core.executor.simple import SimpleExecutor
 from core.pipeline import Pipeline
@@ -38,6 +39,7 @@ from security.audit.log import AuditLog, JsonlAuditLog
 from security.policy.policy import PolicyEngine
 from tools.demo import build_demo_tools
 from tools.files import build_file_tools
+from tools.memory import build_memory_tools
 from tools.registry import ToolRegistry
 
 
@@ -72,6 +74,9 @@ def build_agent(
     verifier = ContractVerifier()
     # File tools register their own verifier contracts; they live only in the workspace.
     build_file_tools(registry, settings.workspace, verifier=verifier)
+    # Memory tools + a durable store the agent can read across runs (ADR-012).
+    memory = MemoryStore(settings.memory_path, max_entries=settings.memory_max)
+    build_memory_tools(registry, memory, verifier=verifier)
 
     runner = StepRunner(
         registry=registry,
@@ -86,7 +91,13 @@ def build_agent(
         model=settings.ollama_model,
         timeout=settings.llm_timeout,
     )
-    return AgentLoop(provider=provider, runner=runner, max_steps=settings.max_steps)
+    return AgentLoop(
+        provider=provider,
+        runner=runner,
+        max_steps=settings.max_steps,
+        memory=memory,
+        memory_recall=settings.memory_recall,
+    )
 
 
 def render_report(task: Task, title: str = "AERQEN pipeline report") -> str:

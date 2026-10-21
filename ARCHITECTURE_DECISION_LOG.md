@@ -68,6 +68,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-009` | Tool's declared risk is authoritative; fixed safety-gate order; fail-closed audit | Accepted |
 | `ADR-010` | LLM agent loop shares the safety gates; one tool per turn; untrusted output; sandboxed create-only file tools | Accepted |
 | `ADR-011` | Workspace mutation + search tools; destructive actions are recoverable via `.trash`; exact-byte writes | Accepted |
+| `ADR-012` | Durable agent memory: a small bounded JSONL notebook; LOW-risk tools; auto-recall into the prompt | Proposed |
 
 ---
 
@@ -401,6 +402,54 @@ remove a file must not create a way to lose the user's data or to escape the san
 **References**
 - `tools/files.py`, `core/verifier/checker.py`, `tests/unit/test_files.py`,
   `tests/unit/test_agent_loop.py`.
+
+---
+
+## ADR-012 — Durable agent memory
+
+**Status:** Proposed (awaiting owner acceptance)
+**Date:** 2026-10-21
+
+**Context**
+Every task so far started from a blank slate: the agent could not carry a fact (a
+preference, a project detail, something the user said) from one run to the next. The owner
+asked for memory. It must be durable across runs, cheap and local, and must not become a
+way to leak secrets or grow without bound.
+
+**Decision**
+- Memory is a small, bounded JSONL notebook (`core/memory/store.py`, `MemoryStore`) at
+  `AERQEN_MEMORY` (default `data/memory/memory.jsonl`), separate from the file workspace.
+  Each note is capped (`MAX_TEXT`) and the store keeps only the newest `AERQEN_MEMORY_MAX`
+  notes (default 200), dropping the oldest. Corrupt lines are skipped, never fatal.
+- Three tools, all **LOW** risk: `memory.remember`, `memory.recall`, `memory.list`. They
+  are LOW (no approval) because they touch only this bounded store, never the user's files;
+  forcing approval on every jotted note would make the loop unusable. Writes are still audited.
+- **Auto-recall:** at the start of a task the agent loop recalls the most relevant notes
+  (simple case-insensitive keyword match, newest first, `AERQEN_MEMORY_RECALL`, default 5)
+  and injects them as a system context block labelled as the agent's own notes and as data,
+  not instructions. Memory failures never break a task (they degrade to "no notes").
+
+**Alternatives considered**
+- A vector / embedding database: rejected for now as far too heavy for the need; plain
+  substring/keyword recall over a few hundred short notes is enough and fully auditable.
+- Storing memory inside the file workspace: rejected — memory is the agent's own scratchpad
+  and should not appear in, or collide with, the user's files.
+- Auto-saving a memory after every task: rejected — noisy. The agent saves only what it
+  explicitly decides to keep; only recall is automatic.
+- Making memory writes MEDIUM (approval): rejected — it would interrupt the user constantly
+  for a bounded, low-consequence store.
+
+**Consequences**
+- **Positive:** the agent carries context across sessions (verified: run 1 saved a fact,
+  a separate run 2 recalled and used it) without new risk to the user's files.
+- **Negative:** keyword recall can miss a paraphrase an embedding search would catch; the
+  oldest notes are forgotten once the cap is hit; secrets are not auto-redacted from notes
+  (the agent is told to keep notes short and non-sensitive).
+
+**References**
+- `core/memory/store.py`, `tools/memory.py`, `core/agent/loop.py`,
+  `app/configuration/settings.py`, `app/entrypoint/cli.py`,
+  `tests/unit/test_memory.py`, `tests/unit/test_agent_loop.py`.
 
 ---
 
