@@ -79,3 +79,8 @@ class Task:
     plan: list[Step] = field(default_factory=list)
     report: Optional[dict[str, Any]] = None
     error: Optional[str] = None
+
+    # Final natural-language answer from the agent loop (the LLM's closing message),
+    # when the task was driven by a model rather than a fixed plan. None for the
+    # deterministic pipeline, which reports via steps only.
+    answer: Optional[str] = None

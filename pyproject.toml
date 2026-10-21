@@ -17,3 +17,6 @@ pillow = "*"
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    "live: talks to a running Ollama; skipped automatically when it is unavailable.",
+]

@@ -51,9 +51,9 @@ An item is never deleted merely to make the queue look shorter.
 | Phase | Items |
 |---|---|
 | `done` | `CRIT-1`, `CRIT-2`, `CRIT-3`, `CRIT-4`, `CRIT-5`, `CRIT-6` — documentation/specification established; `CRIT-8` — skeleton pipeline accepted (owner-verified, 4 tests passed) |
-| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — implemented, 31 tests pass (2026-10-21), owner acceptance pending |
+| `testing` | `FEAT-1`, `FEAT-2`, `FEAT-3`, `FEAT-4`, `FEAT-5`, `FEAT-6`, `FEAT-7`, `FEAT-9`, `FEAT-11` — foundation, 31 tests pass (2026-10-21), owner acceptance pending; `LLM-1` (agent loop + Ollama) and `FEAT-13` (file tools) — 52 tests pass (51 fake + 1 live, 2026-10-21), owner acceptance pending |
 | `building` | `CRIT-7` (decisions recorded; dev environment setup still in progress) |
-| `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3); LLM brain via Ollama (next) |
+| `pending` | Phase 1 dev environment install + acceptance gate; `FEAT-8` (real observation, Phase 3) |
 | `blocked` | Public brand/legal clearance before commercial launch |
 | `superseded` | — |
 
@@ -384,9 +384,34 @@ Introduce controlled mouse, keyboard, window, and screen capabilities only after
 
 ## `FEAT-13` — File/document tools
 
-**Phase:** `pending`
+**Phase:** `testing`
 
-Add safe filesystem and document operations with explicit destructive-action policies.
+First sandboxed file tools shipped (ADR-010): `files.list` / `files.read_text` (LOW) and
+`files.write_text` (MEDIUM, create-only), confined to `AERQEN_WORKSPACE`. Traversal, absolute
+paths and drive letters are rejected; the write verifier re-reads and compares sha256.
+Still pending for a later pass: overwrite/append/delete (higher-risk tools), binary/document
+formats, and directory operations.
+
+**Implemented:** `tools/files.py`, verifier contracts in `core/verifier/checker.py`,
+tests in `tests/unit/test_files.py`.
+
+---
+
+## `LLM-1` — LLM agent loop (Ollama)
+
+**Phase:** `testing`
+
+The first real agent: a model picks one tool per turn and each turn passes the shared safety
+gates (`core/runner.py`), with untrusted tool output and a bounded step budget (ADR-005/ADR-010).
+
+**Implemented:** `integrations/ai/provider.py`, `integrations/ai/ollama.py`, `core/agent/loop.py`,
+`core/runner.py` (shared by the refactored `core/pipeline.py`), `--agent` flag in
+`app/entrypoint/cli.py`, settings in `app/configuration/settings.py`, tests in
+`tests/unit/test_agent_loop.py`.
+
+**Evidence (Measured, 2026-10-21):** 52 tests pass (51 fake-provider + 1 live Ollama); a live run
+created a file via `files.write_text` after approval with a matching sha256, and the same write
+was `blocked` when no one approved.
 
 ---
 
