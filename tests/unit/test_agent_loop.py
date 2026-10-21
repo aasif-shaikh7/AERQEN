@@ -152,6 +152,25 @@ def test_bad_input_is_fed_back_then_corrected(tmp_path):
     assert len(provider.calls) == 3
 
 
+def test_agent_reads_then_summarizes(tmp_path):
+    # A read-only "read this file and tell me about it" flow: LOW tool, no approval.
+    (tmp_path / "data.txt").write_text("apples oranges bananas", encoding="utf-8")
+    replies = [
+        _call("files_read_text", path="data.txt"),
+        LLMReply(content="The file lists three fruits: apples, oranges and bananas."),
+    ]
+    agent, provider, audit, _ = _build_agent(tmp_path, replies, approver=DenyAllApprover())
+    task = Task(task_id="t-sum", description="read data.txt and summarize it")
+    agent.run(task)
+
+    assert task.state is TaskState.DONE
+    assert "fruits" in task.answer
+    # A LOW read never triggers an approval prompt.
+    assert "approval" not in audit.names()
+    assert task.plan[0].tool == "files.read_text"
+    assert task.plan[0].outcome.startswith("Measured:")
+
+
 def test_reaching_step_budget_fails(tmp_path):
     replies = [_call("files_list", path=".") for _ in range(5)]
     agent, provider, audit, _ = _build_agent(tmp_path, replies, max_steps=2)

@@ -169,6 +169,22 @@ On the dev machine (host(, per owner coordination:
   re-read with a matching sha256 (`report.txt` -> `AERQEN is alive.`). With no approver the same
   write was `blocked` / `approval: denied` and no file was created.
 
+### Phase 2 — file superpowers (2026-10-21; owner acceptance pending)
+
+- **New file tools (ADR-011, proposed):** `files.search` and `files.make_dir` (LOW),
+  `files.append_text`, `files.overwrite_text`, `files.delete` (MEDIUM, approval + audit).
+- **Recoverable by design:** `files.delete` moves the file into a workspace `.trash` folder;
+  `files.overwrite_text` backs up the previous version to `.trash` before replacing it. Nothing
+  is permanently destroyed. `files.delete` refuses folders; search/list hide `.trash`/`.gitkeep`.
+- **Exact-byte writes:** write/overwrite/append now write bytes directly (no OS newline
+  translation), fixing a Windows CRLF issue that made the sha256 verifier report a false failure
+  on files containing newlines — caught by a live multi-step run, not assumed.
+- **"Read and summarize"** needs no new tool: the agent reads with `files.read_text` and answers.
+- **Tests:** +11 (file tools + an agent read→summarize flow). `pytest -m "not live"` -> **62 passed**.
+- **Evidence (Measured, 2026-10-21, qwen2.5:7b):** a live agent task chained
+  `files.write_text` → `files.append_text` → `files.read_text` and summarized the result;
+  `shopping.txt` ended as `buy milk\nbuy eggs\n` (18 bytes), every mutating step sha256-verified.
+
 ### Product scope
 
 Defined AERQEN as a general-purpose computer-work platform rather than a Revit-only or browser-only automation product.

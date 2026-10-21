@@ -67,6 +67,7 @@ Do not edit history. If a decision changes, mark the old one `Superseded` and ad
 | `ADR-008` | Tool registry + policy + audit; hybrid testing; skeleton MVP | Accepted |
 | `ADR-009` | Tool's declared risk is authoritative; fixed safety-gate order; fail-closed audit | Accepted |
 | `ADR-010` | LLM agent loop shares the safety gates; one tool per turn; untrusted output; sandboxed create-only file tools | Accepted |
+| `ADR-011` | Workspace mutation + search tools; destructive actions are recoverable via `.trash`; exact-byte writes | Proposed |
 
 ---
 
@@ -355,6 +356,51 @@ which nothing in Phase 1 did.
   `integrations/ai/ollama.py`, `tools/files.py`, `core/verifier/checker.py`,
   `app/configuration/settings.py`, `app/entrypoint/cli.py`,
   `tests/unit/test_files.py`, `tests/unit/test_agent_loop.py`.
+
+---
+
+## ADR-011 — Workspace mutation + search tools, recoverable by design
+
+**Status:** Proposed (awaiting owner acceptance)
+**Date:** 2026-10-21
+
+**Context**
+ADR-010 shipped create-only file tools and deferred edit/overwrite/delete as "a later,
+higher-risk tool". The owner then asked for those capabilities ("file superpowers") plus
+search. The project rule is *never weaken security*, so adding the ability to change or
+remove a file must not create a way to lose the user's data or to escape the sandbox.
+
+**Decision**
+- Add five tools, all confined to `AERQEN_WORKSPACE` through the same `_safe_path` check:
+  `files.search` and `files.make_dir` (LOW, read-only / harmless), and `files.append_text`,
+  `files.overwrite_text`, `files.delete` (MEDIUM — each needs approval and is audited).
+- **Nothing is destroyed permanently.** `files.delete` *moves* the file into a `.trash`
+  folder inside the workspace; `files.overwrite_text` copies the previous version into
+  `.trash` before replacing it. Both are therefore recoverable.
+- `files.delete` refuses folders (files only). `files.overwrite_text` refuses a missing file
+  (create is still `files.write_text`). `files.search` and `files.list` hide `.trash` and the
+  `.gitkeep` placeholder.
+- Writes store **exact bytes** (binary write, no OS newline translation), so the recorded
+  sha256 matches what the verifier re-reads — on Windows too. Every mutating tool's verifier
+  re-reads from disk (hash match, or "file is gone" for delete).
+
+**Alternatives considered**
+- Hard delete / truncating overwrite: rejected. One wrong agent step could erase real work;
+  `.trash` keeps the action reversible for the cost of some disk space.
+- Making delete HIGH (and therefore BLOCK): rejected — that would forbid it entirely. MEDIUM
+  (approval + audit + recoverability) matches the real, bounded risk inside a sandbox folder.
+- Text-mode writes: rejected after a live run showed CRLF translation breaking the sha256
+  contract on Windows.
+
+**Consequences**
+- **Positive:** the agent can now do real file work (edit, tidy up, reorganise) and still never
+  lose data or leave the workspace.
+- **Negative:** `.trash` grows until someone empties it (no auto-purge yet). Overwrite keeps only
+  a point-in-time backup, not full version history.
+
+**References**
+- `tools/files.py`, `core/verifier/checker.py`, `tests/unit/test_files.py`,
+  `tests/unit/test_agent_loop.py`.
 
 ---
 
